@@ -7,16 +7,27 @@ namespace QUT
             let rec MiniMax (game: 'Game) (perspective: 'Player) =
                 NodeCounter.Increment()
                 let over = gameOver game
-                let isEven = NodeCounter.Count % 2 = 0
+                let player = getTurn game
 
                 if over then
-                    (None, )
+                    let score = heuristic game player
+                    (None, score)
                 else
-                    let moves = moveGenerator game
-                    let newGameState = Seq.fold(fun gameState move -> (applyMove gameState move)) game moves
-                    let newPerspective = getTurn game
+                    let possibleMoves = moveGenerator game 
+                    let idealMove = match (NodeCounter.Count % 2) with
+                                    | 0 -> Seq.max possibleMoves
+                                    | _ -> Seq.min possibleMoves
 
-                    MiniMax newGameState newPerspective
+                    let newGameState = applyMove game idealMove
+                    let newPerspective = getTurn newGameState
+                    let over = gameOver newGameState
+
+                    if over then
+                        let score = heuristic newGameState newPerspective
+                        (Some idealMove, score)
+                    else
+                        MiniMax newGameState newPerspective
+
             NodeCounter.Reset()
             MiniMax
 
