@@ -14,15 +14,14 @@ namespace QUT
                 else
                     let possibleMoves = moveGenerator game
                     let gameStates = Seq.map (fun move -> applyMove game move) possibleMoves
-                    let perspectives = Seq.map (fun gameState -> getTurn gameState) gameStates
-                    let scores = Seq.map2 (fun gameState perspective -> heuristic gameState perspective) gameStates perspectives
+                    let scores = Seq.map (fun gameState -> heuristic gameState perspective) gameStates
                     let idealScore = match (NodeCounter.Count % 2) with
                                      | 0 -> Seq.max scores
                                      | _ -> Seq.min scores
 
                     let scoreIndex = Seq.findIndex (fun score -> score = idealScore) scores
                     let newGameState = Seq.item scoreIndex gameStates
-                    let newPerspective = Seq.item scoreIndex perspectives
+                    let newPerspective = getTurn newGameState
                     let idealMove = Seq.item scoreIndex possibleMoves
                     let over = gameOver newGameState
 
