@@ -24,15 +24,9 @@ namespace QUT
 
                     let idealTuple = Seq.find (fun (move, score) -> score = idealScore) tuples
                     let newGameState = Seq.find (fun gameState -> MiniMax gameState perspective = idealTuple) gameStates
-                    let over = gameOver newGameState
-
-                    if over then
-                        let finalScore = heuristic newGameState perspective
-                        let moves = moveGenerator game
-                        let idealMove = Seq.tryFind (fun move -> applyMove game move = newGameState) moves
-                        (idealMove, finalScore)
-                    else                
-                        MiniMax newGameState perspective
+                    let idealMove = Seq.tryFind (fun move -> applyMove game move = newGameState) moves
+                    let result = MiniMax newGameState perspective
+                    (idealMove, idealScore)               
             NodeCounter.Reset()
             MiniMax
 
