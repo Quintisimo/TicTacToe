@@ -7,24 +7,27 @@ namespace QUT
             let rec MiniMax (game: 'Game) (perspective: 'Player) =
                 NodeCounter.Increment()
                 let over = gameOver game
-                let player = getTurn game
 
                 if over then
-                    let score = heuristic game player
+                    let score = heuristic game perspective
                     (None, score)
                 else
-                    let possibleMoves = moveGenerator game 
-                    let idealMove = match (NodeCounter.Count % 2) with
-                                    | 0 -> Seq.max possibleMoves
-                                    | _ -> Seq.min possibleMoves
+                    let possibleMoves = moveGenerator game
+                    let gameStates = Seq.map (fun move -> applyMove game move) possibleMoves
+                    let perspectives = Seq.map (fun gameState -> getTurn gameState) gameStates
+                    let scores = Seq.map2 (fun gameState perspective -> heuristic gameState perspective) gameStates perspectives
+                    let idealScore = match (NodeCounter.Count % 2) with
+                                     | 0 -> Seq.max scores
+                                     | _ -> Seq.min scores
 
-                    let newGameState = applyMove game idealMove
-                    let newPerspective = getTurn newGameState
+                    let scoreIndex = Seq.findIndex (fun score -> score = idealScore) scores
+                    let newGameState = Seq.item scoreIndex gameStates
+                    let newPerspective = Seq.item scoreIndex perspectives
+                    let idealMove = Seq.item scoreIndex possibleMoves
                     let over = gameOver newGameState
 
                     if over then
-                        let score = heuristic newGameState newPerspective
-                        (Some idealMove, score)
+                        (Some idealMove, idealScore)
                     else
                         MiniMax newGameState newPerspective
 
