@@ -12,24 +12,27 @@ namespace QUT
                     let score = heuristic game perspective
                     (None, score)
                 else
-                    let possibleMoves = moveGenerator game
-                    let gameStates = Seq.map (fun move -> applyMove game move) possibleMoves
-                    let scores = Seq.map (fun gameState -> heuristic gameState perspective) gameStates
-                    let idealScore = match (NodeCounter.Count % 2) with
-                                     | 0 -> Seq.max scores
-                                     | _ -> Seq.min scores
+                    let moves = moveGenerator game
+                    let gameStates = Seq.map (fun move -> applyMove game move) moves
+                    let tuples = Seq.map (fun gameState -> MiniMax gameState perspective) gameStates
+                    let scores = Seq.map (fun (move, score) -> score) tuples
 
-                    let scoreIndex = Seq.findIndex (fun score -> score = idealScore) scores
-                    let newGameState = Seq.item scoreIndex gameStates
-                    let newPerspective = getTurn newGameState
-                    let idealMove = Seq.item scoreIndex possibleMoves
+                    let nextPerspective = getTurn game
+                    let idealScore = match (nextPerspective = perspective) with
+                                     | true -> Seq.max scores
+                                     | false -> Seq.min scores
+
+                    let idealTuple = Seq.find (fun (move, score) -> score = idealScore) tuples
+                    let newGameState = Seq.find (fun gameState -> MiniMax gameState perspective = idealTuple) gameStates
                     let over = gameOver newGameState
 
                     if over then
-                        (Some idealMove, idealScore)
-                    else
-                        MiniMax newGameState newPerspective
-
+                        let finalScore = heuristic newGameState perspective
+                        let moves = moveGenerator game
+                        let idealMove = Seq.tryFind (fun move -> applyMove game move = newGameState) moves
+                        (idealMove, finalScore)
+                    else                
+                        MiniMax newGameState perspective
             NodeCounter.Reset()
             MiniMax
 
