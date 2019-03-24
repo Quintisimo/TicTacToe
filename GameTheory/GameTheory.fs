@@ -32,7 +32,7 @@ namespace QUT
 
         let MiniMaxWithAlphaBetaPruningGenerator (heuristic:'Game -> 'Player -> int) (getTurn: 'Game -> 'Player) (gameOver:'Game->bool) (moveGenerator: 'Game->seq<'Move>) (applyMove: 'Game -> 'Move -> 'Game) : int -> int -> 'Game -> 'Player -> Option<'Move> * int =
             // Optimized MiniMax algorithm that uses alpha beta pruning to eliminate parts of the search tree that don't need to be explored            
-            let rec MiniMax (alpha: int32) (beta: int32) (oldState: 'Game) (perspective: 'Player) =
+            let rec MiniMax (alpha: int) (beta: int) (oldState: 'Game) (perspective: 'Player) =
                 NodeCounter.Increment()
                 let over = gameOver oldState
 
@@ -54,13 +54,14 @@ namespace QUT
                                        | false -> alpha
 
                         let idealTuple = Seq.find (fun (move, score) -> score = idealScore) tuples
-                        let newGameState = Seq.find (fun gameState -> MiniMax newAlpha beta gameState perspective = idealTuple) gameStates
+                        let newGameState = Seq.find (fun gameState -> MiniMax alpha beta gameState perspective = idealTuple) gameStates
                         let idealMove = Seq.tryFind (fun move -> applyMove oldState move = newGameState) moves
 
                         if beta <= newAlpha then
                             (idealMove, idealScore)
                         else
-                            MiniMax newAlpha beta newGameState perspective
+                            let result = MiniMax newAlpha beta newGameState perspective
+                            (idealMove, idealScore)
 
                     else
                         let idealScore = Seq.min scores
@@ -69,14 +70,15 @@ namespace QUT
                                       | false -> beta
 
                         let idealTuple = Seq.find (fun (move, score) -> score = idealScore) tuples
-                        let newGameState = Seq.find (fun gameState -> MiniMax alpha newBeta gameState perspective = idealTuple) gameStates
+                        let newGameState = Seq.find (fun gameState -> MiniMax alpha beta gameState perspective = idealTuple) gameStates
                         let idealMove = Seq.tryFind (fun move -> applyMove oldState move = newGameState) moves
 
 
                         if newBeta <= alpha then
                            (idealMove, idealScore)
                         else
-                           MiniMax alpha newBeta newGameState perspective
+                           let result = MiniMax alpha newBeta newGameState perspective
+                           (idealMove, idealScore)
             NodeCounter.Reset()
             MiniMax
              
