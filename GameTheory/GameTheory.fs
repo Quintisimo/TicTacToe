@@ -54,7 +54,7 @@ namespace QUT
                                        | false -> alpha
 
                         let idealTuple = Seq.find (fun (move, score) -> score = idealScore) tuples
-                        let newGameState = Seq.find (fun gameState -> MiniMax alpha beta oldState perspective = idealTuple) gameStates
+                        let newGameState = Seq.find (fun gameState -> MiniMax newAlpha beta gameState perspective = idealTuple) gameStates
                         let idealMove = Seq.tryFind (fun move -> applyMove oldState move = newGameState) moves
 
                         if beta <= newAlpha then
@@ -69,7 +69,7 @@ namespace QUT
                                       | false -> beta
 
                         let idealTuple = Seq.find (fun (move, score) -> score = idealScore) tuples
-                        let newGameState = Seq.find (fun gameState -> MiniMax alpha beta oldState perspective = idealTuple) gameStates
+                        let newGameState = Seq.find (fun gameState -> MiniMax alpha newBeta gameState perspective = idealTuple) gameStates
                         let idealMove = Seq.tryFind (fun move -> applyMove oldState move = newGameState) moves
 
 
