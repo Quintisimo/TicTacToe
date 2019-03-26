@@ -49,36 +49,29 @@ namespace QUT
 
                     if nextPerspective = perspective then
                         let idealScore = Seq.max scores
-                        let newAlpha = match (idealScore > alpha) with
-                                       | true -> idealScore
-                                       | false -> alpha
-
+                        let newAlpha = max idealScore alpha
                         let idealTuple = Seq.find (fun (move, score) -> score = idealScore) tuples
                         let newGameState = Seq.find (fun gameState -> MiniMax alpha beta gameState perspective = idealTuple) gameStates
                         let idealMove = Seq.tryFind (fun move -> applyMove oldState move = newGameState) moves
 
                         if beta <= newAlpha then
-                            (idealMove, idealScore)
+                            (idealMove, newAlpha)
                         else
-                            let result = MiniMax newAlpha beta newGameState perspective
-                            (idealMove, idealScore)
+                            let result = MiniMax alpha beta newGameState perspective
+                            (idealMove, newAlpha)
 
                     else
                         let idealScore = Seq.min scores
-                        let newBeta = match (idealScore < beta) with
-                                      | true -> idealScore
-                                      | false -> beta
-
+                        let newBeta = min idealScore beta
                         let idealTuple = Seq.find (fun (move, score) -> score = idealScore) tuples
                         let newGameState = Seq.find (fun gameState -> MiniMax alpha beta gameState perspective = idealTuple) gameStates
                         let idealMove = Seq.tryFind (fun move -> applyMove oldState move = newGameState) moves
 
-
                         if newBeta <= alpha then
-                           (idealMove, idealScore)
+                            (idealMove, newBeta)
                         else
-                           let result = MiniMax alpha newBeta newGameState perspective
-                           (idealMove, idealScore)
+                            let result = MiniMax alpha beta newGameState perspective
+                            (idealMove, newBeta)
             NodeCounter.Reset()
             MiniMax
              
