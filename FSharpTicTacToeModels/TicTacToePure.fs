@@ -7,23 +7,22 @@ namespace QUT
 
         // type to represent a single move specified using (row, column) coordinates of the selected square
         type Move = 
-            { something: int (* TODO implement type *) }
+            { row: int; col: int }
             interface ITicTacToeMove with
-                member this.Row with get() = raise (System.NotImplementedException("getRow"))
-                member this.Col with get() = raise (System.NotImplementedException("getCol"))
+                member this.Row with get() = this.row
+                member this.Col with get() = this.col
 
         // type to represent the current state of the game, including the size of the game (NxN), who's turn it is and the pieces on the board
         type GameState = 
-            { something: int (* TODO implement type *) }
+            { turn: Player; size: int; moves: seq<Move> }
             interface ITicTacToeGame<Player> with
-                member this.Turn with get()    = raise (System.NotImplementedException("getTurn"))
-                member this.Size with get()    = raise (System.NotImplementedException("getSize"))
-                member this.getPiece(row, col) = raise (System.NotImplementedException("getPiece"))
+                member this.Turn with get()    = this.turn
+                member this.Size with get()    = this.size
+                member this.getPiece(row, col) = raise (System.NotImplementedException("Get Piece"))
 
+        let CreateMove row col = { row = row; col = col }
 
-        let CreateMove row col = raise (System.NotImplementedException("CreateMove"))
-
-        let ApplyMove (oldState:GameState) (move: Move) = raise (System.NotImplementedException("CreateMove"))
+        let ApplyMove (oldState:GameState) (move: Move) = { turn = oldState.turn; size = oldState.size; moves = Seq.append oldState.moves (Seq.singleton move) }
 
         // Returns a sequence containing all of the lines on the board: Horizontal, Vertical and Diagonal
         // The number of lines returned should always be (size*2+2)
@@ -31,7 +30,22 @@ namespace QUT
         // For example, if the input size = 2, then the output would be: 
         //     seq [seq[(0,0);(0,1)];seq[(1,0);(1,1)];seq[(0,0);(1,0)];seq[(0,1);(1,1)];seq[(0,0);(1,1)];seq[(0,1);(1,0)]]
         // The order of the lines and the order of the squares within each line does not matter
-        let Lines (size:int) : seq<seq<int*int>> = raise (System.NotImplementedException("Lines"))
+        let Lines (size:int) : seq<seq<int*int>> = 
+            let horizontal = seq { for row in 0..size - 1 do
+                                        yield seq { for col in 0..size - 1 do
+                                                        yield (row, col) }}
+            let vertical = seq { for row in 0..size - 1 do
+                                    yield seq { for col in 0..size - 1 do 
+                                                    yield (col, row) }}
+
+            let leftDiagonal = seq { for row in 0..size - 1 do
+                                            yield! seq { for col in 0..size - 1 do
+                                                            if row = col then yield (row, col) }}
+
+            let rightDiagonal = seq { for row in 0..size - 1 do
+                                        yield! seq { for col in 0..size - 1  do 
+                                                        if row <> col then yield (row, col) } }
+            Seq.append (Seq.append horizontal vertical) (Seq.append (Seq. singleton leftDiagonal) (Seq.singleton rightDiagonal))
 
         // Checks a single line (specified as a sequence of (row,column) coordinates) to determine if one of the players
         // has won by filling all of those squares, or a Draw if the line contains at least one Nought and one Cross
