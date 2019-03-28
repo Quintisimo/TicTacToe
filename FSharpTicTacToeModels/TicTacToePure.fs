@@ -25,7 +25,7 @@ namespace QUT
         let ApplyMove (oldState:GameState) (move: Move) : GameState = 
             let appliedMove = [ for i in 0..oldState.size - 1 do
                                     yield [ for j in 0..oldState.size - 1 do
-                                                if i = move.row && j = move.row then
+                                                if i = move.row && j = move.col then
                                                     if oldState.turn = Nought then
                                                         yield "O"
                                                 elif oldState.turn = Cross then
@@ -62,20 +62,36 @@ namespace QUT
         let CheckLine (game:GameState) (line:seq<int*int>) : TicTacToeOutcome<Player> =
             let pieces = List.map (fun (x, y) -> game.pieces.[x].[y]) (Seq.toList line)
             let won = List.forall (fun piece -> piece = pieces.[0]) pieces
-            let draw = List.forall (fun piece -> piece = "") pieces
+            let empty = List.forall (fun piece -> piece = "") pieces
 
             if won then
                 Win (game.turn, line)
-            elif draw then
+            elif empty then
+                Undecided
+            else
+                Draw
+
+            
+
+        let GameOutcome (game: GameState) : TicTacToeOutcome<Player> = 
+            let lines = Lines game.size
+            let statuses  = Seq.map (fun line -> CheckLine game line) lines
+            let win = Seq.tryFind (fun status -> status <> Undecided || status <> Draw) statuses
+            let draw = Seq.tryFind (fun status -> status = Draw) statuses
+
+            if Option.isSome win then
+                win.Value
+            elif Option.isSome draw then
                 Draw
             else
                 Undecided
 
-            
 
-        let GameOutcome (game: GameState) : TicTacToeOutcome<Player> = raise (System.NotImplementedException("GameOutcome"))
-
-        let GameStart (firstPlayer:Player) size = raise (System.NotImplementedException("GameStart"))
+        let GameStart (firstPlayer:Player) (size: int) : GameState = 
+            let pieces = [ for i in 0..size - 1 do 
+                            yield [for j in 0..size - 1 do
+                                        yield "" ] ]
+            { turn = firstPlayer; size = size; pieces = pieces }
 
         let MiniMax game = raise (System.NotImplementedException("MiniMax"))
 
