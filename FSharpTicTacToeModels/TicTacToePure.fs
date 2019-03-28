@@ -14,15 +14,25 @@ namespace QUT
 
         // type to represent the current state of the game, including the size of the game (NxN), who's turn it is and the pieces on the board
         type GameState = 
-            { turn: Player; size: int; moves: seq<Move> }
+            { turn: Player; size: int; pieces: List<List<string>>  }
             interface ITicTacToeGame<Player> with
                 member this.Turn with get()    = this.turn
                 member this.Size with get()    = this.size
-                member this.getPiece(row, col) = raise (System.NotImplementedException("Get Piece"))
+                member this.getPiece(row, col) = this.pieces.[row].[col]
 
-        let CreateMove row col = { row = row; col = col }
+        let CreateMove (row: int) (col: int) : Move = { row = row; col = col }
 
-        let ApplyMove (oldState:GameState) (move: Move) = { turn = oldState.turn; size = oldState.size; moves = Seq.append oldState.moves (Seq.singleton move) }
+        let ApplyMove (oldState:GameState) (move: Move) : GameState = 
+            let appliedMove = [ for i in 0..oldState.size - 1 do
+                                    yield [ for j in 0..oldState.size - 1 do
+                                                if i = move.row && j = move.row then
+                                                    if oldState.turn = Nought then
+                                                        yield "O"
+                                                elif oldState.turn = Cross then
+                                                        yield "X"
+                                                else
+                                                        yield oldState.pieces.[i].[j] ] ]
+            { turn = oldState.turn; size = oldState.size; pieces = appliedMove }
 
         // Returns a sequence containing all of the lines on the board: Horizontal, Vertical and Diagonal
         // The number of lines returned should always be (size*2+2)
@@ -40,7 +50,7 @@ namespace QUT
 
             let leftDiagonal = seq { for row in 0..size - 1 do
                                             yield! seq { for col in 0..size - 1 do
-                                                            if row = col then yield (row, col) }}
+                                                            if row = col then yield (row, col) } }
 
             let rightDiagonal = seq { for row in 0..size - 1 do
                                         yield! seq { for col in 0..size - 1  do 
@@ -49,9 +59,21 @@ namespace QUT
 
         // Checks a single line (specified as a sequence of (row,column) coordinates) to determine if one of the players
         // has won by filling all of those squares, or a Draw if the line contains at least one Nought and one Cross
-        let CheckLine (game:GameState) (line:seq<int*int>) : TicTacToeOutcome<Player> = raise (System.NotImplementedException("CheckLine"))
+        let CheckLine (game:GameState) (line:seq<int*int>) : TicTacToeOutcome<Player> =
+            let pieces = List.map (fun (x, y) -> game.pieces.[x].[y]) (Seq.toList line)
+            let won = List.forall (fun piece -> piece = pieces.[0]) pieces
+            let draw = List.forall (fun piece -> piece = "") pieces
 
-        let GameOutcome game = raise (System.NotImplementedException("GameOutcome"))
+            if won then
+                Win (game.turn, line)
+            elif draw then
+                Draw
+            else
+                Undecided
+
+            
+
+        let GameOutcome (game: GameState) : TicTacToeOutcome<Player> = raise (System.NotImplementedException("GameOutcome"))
 
         let GameStart (firstPlayer:Player) size = raise (System.NotImplementedException("GameStart"))
 
