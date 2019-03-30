@@ -23,15 +23,15 @@ namespace QUT
         let CreateMove (row: int) (col: int) : Move = { row = row; col = col }
 
         let ApplyMove (oldState:GameState) (move: Move) : GameState = 
-            let appliedMove = [ for i in 0..oldState.size - 1 do
-                                    yield [ for j in 0..oldState.size - 1 do
+            let appliedMove = [ for i in 0..oldState.size do
+                                    yield [ for j in 0..oldState.size do
                                                 if i = move.row && j = move.col then
                                                     if oldState.turn = Nought then
                                                         yield "O"
-                                                elif oldState.turn = Cross then
+                                                    elif oldState.turn = Cross then
                                                         yield "X"
                                                 else
-                                                        yield oldState.pieces.[i].[j] ] ]
+                                                    yield oldState.pieces.[i].[j] ] ]
             { turn = oldState.turn; size = oldState.size; pieces = appliedMove }
 
         // Returns a sequence containing all of the lines on the board: Horizontal, Vertical and Diagonal
@@ -54,24 +54,22 @@ namespace QUT
 
             let rightDiagonal = seq { for row in 0..size - 1 do
                                         yield! seq { for col in 0..size - 1  do 
-                                                        if row <> col then yield (row, col) } }
+                                                        if row + col = size - 1 then yield (row, col) } }
             Seq.append (Seq.append horizontal vertical) (Seq.append (Seq. singleton leftDiagonal) (Seq.singleton rightDiagonal))
 
         // Checks a single line (specified as a sequence of (row,column) coordinates) to determine if one of the players
         // has won by filling all of those squares, or a Draw if the line contains at least one Nought and one Cross
         let CheckLine (game:GameState) (line:seq<int*int>) : TicTacToeOutcome<Player> =
             let pieces = List.map (fun (x, y) -> game.pieces.[x].[y]) (Seq.toList line)
-            let won = List.forall (fun piece -> piece = pieces.[0]) pieces
-            let empty = List.forall (fun piece -> piece = "") pieces
+            let draw = List.forall (fun piece -> piece = "X" || piece = "O") pieces
+            let won = List.forall (fun piece -> piece <> "" && piece = pieces.[0]) pieces
 
-            if won then
-                Win (game.turn, line)
-            elif empty then
-                Undecided
-            else
+            if draw then
                 Draw
-
-            
+            elif won then
+                Win (game.turn, line)
+            else
+                Undecided
 
         let GameOutcome (game: GameState) : TicTacToeOutcome<Player> = 
             let lines = Lines game.size
@@ -88,15 +86,57 @@ namespace QUT
 
 
         let GameStart (firstPlayer:Player) (size: int) : GameState = 
-            let pieces = [ for i in 0..size - 1 do 
-                            yield [for j in 0..size - 1 do
+            let pieces = [ for i in 0..size do 
+                            yield [for j in 0..size do
                                         yield "" ] ]
             { turn = firstPlayer; size = size; pieces = pieces }
 
-        let MiniMax game = raise (System.NotImplementedException("MiniMax"))
+        let GetTurn (game: GameState) : Player = game.turn
 
-        let MiniMaxWithPruning game = raise (System.NotImplementedException("MiniMaxWithPruning"))
+        let MoveGenerator (game: GameState) : seq<Move> = 
+            let possibleIndexes = [ for i = 0 to game.size do
+                                        for j = 0 to game.size do
+                                            if game.pieces.[i].[j] = "" then 
+                                                yield (i, j)]
+            let possibleMoves = List.map (fun (x, y) -> CreateMove x y) possibleIndexes
+            List.toSeq possibleMoves
 
+        let GameOver (game: GameState) : bool = 
+            let over = GameOutcome game
+
+            if over = Undecided then
+                false
+            else
+                true
+
+        let HeuristicScore (game: GameState) (player: Player) : int =
+            let outcome = GameOutcome game
+
+            if outcome = Draw then
+                0 
+            elif outcome = Undecided then
+                -1
+            else
+                1
+
+        let MiniMax (game: GameState) : Move = 
+            let minMax = GameTheory.MiniMaxGenerator HeuristicScore GetTurn GameOver MoveGenerator ApplyMove
+            let (move, score) = minMax game game.turn
+            move.Value
+
+            //if Option.isSome move then
+            //else
+                //None
+
+        let MiniMaxWithPruning (game: GameState) : Move = 
+            let minMaxPruning = GameTheory.MiniMaxWithAlphaBetaPruningGenerator HeuristicScore GetTurn GameOver MoveGenerator ApplyMove
+            let (move, score) = minMaxPruning System.Int32.MinValue System.Int32.MaxValue game game.turn
+
+            move.Value
+
+            //if Option.isSome move then
+            //else
+                //None
         // plus other helper functions ...
 
 
@@ -117,10 +157,10 @@ namespace QUT
         type BasicMiniMax() =
             inherit Model()
             override this.ToString()         = "Pure F# with basic MiniMax";
-            override this.FindBestMove(game) = raise (System.NotImplementedException("FindBestMove"))
+            override this.FindBestMove(game) = MiniMax game
 
 
         type WithAlphaBetaPruning() =
             inherit Model()
             override this.ToString()         = "Pure F# with Alpha Beta Pruning";
-            override this.FindBestMove(game) = raise (System.NotImplementedException("FindBestMove"))
+            override this.FindBestMove(game) = MiniMaxWithPruning game
