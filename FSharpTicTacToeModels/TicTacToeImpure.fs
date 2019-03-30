@@ -2,34 +2,98 @@ namespace QUT
 
     module FSharpImpureTicTacToeModel =
     
-        type Player = Something (* implement type *)
+        type Player = Nought | Cross
 
         type GameState = 
-            { something: int (* implement type *) } 
+            { mutable turn: Player; size: int; pieces: string[][] }
             interface ITicTacToeGame<Player> with
-                member this.Turn with get()    = raise (System.NotImplementedException("getTurn"))
-                member this.Size with get()    = raise (System.NotImplementedException("getSize"))
-                member this.getPiece(row, col) = raise (System.NotImplementedException("getPiece"))
+                member this.Turn with get()    = this.turn
+                member this.Size with get()    = this.size
+                member this.getPiece(row, col) = this.pieces.[row].[col]
 
         type Move = 
-            { something: int (* implement type *) }
+            { row: int; col: int }
             interface ITicTacToeMove with
-                member this.Row with get() = raise (System.NotImplementedException("getRow"))
-                member this.Col with get() = raise (System.NotImplementedException("getCol"))
+                member this.Row with get() = this.row
+                member this.Col with get() = this.col
+
+        // Returns a sequence containing all of the lines on the board: Horizontal, Vertical and Diagonal
+        // The number of lines returned should always be (size*2+2)
+        // the number of squares in each line (represented by (row,column) coordinates) should always be equal to size
+        // For example, if the input size = 2, then the output would be: 
+        //     seq [seq[(0,0);(0,1)];seq[(1,0);(1,1)];seq[(0,0);(1,0)];seq[(0,1);(1,1)];seq[(0,0);(1,1)];seq[(0,1);(1,0)]]
+        // The order of the lines and the order of the squares within each line does not matter
+        let Lines (size:int) : seq<seq<int*int>> = 
+            let horizontal = seq { for row in 0..size - 1 do
+                                        yield seq { for col in 0..size - 1 do
+                                                        yield (row, col) }}
+            let vertical = seq { for row in 0..size - 1 do
+                                    yield seq { for col in 0..size - 1 do 
+                                                    yield (col, row) }}
+
+            let leftDiagonal = seq { for row in 0..size - 1 do
+                                            yield! seq { for col in 0..size - 1 do
+                                                            if row = col then yield (row, col) } }
+
+            let rightDiagonal = seq { for row in 0..size - 1 do
+                                        yield! seq { for col in 0..size - 1  do 
+                                                        if row + col = size - 1 then yield (row, col) } }
+            Seq.append (Seq.append horizontal vertical) (Seq.append (Seq. singleton leftDiagonal) (Seq.singleton rightDiagonal))
+
+        // Checks a single line (specified as a sequence of (row,column) coordinates) to determine if one of the players
+        // has won by filling all of those squares, or a Draw if the line contains at least one Nought and one Cross
+        let CheckLine (game:GameState) (line:seq<int*int>) : TicTacToeOutcome<Player> =
+            let pieces = List.map (fun (x, y) -> game.pieces.[x].[y]) (Seq.toList line)
+            let won = List.forall (fun piece -> piece <> "" && piece = pieces.[0]) pieces
+            let draw = List.forall (fun piece -> piece = "X" || piece = "O") pieces
+
+            if won then
+                let player = if pieces.[0] = "X" then Cross else Nought
+                Win (player, line)
+            elif draw then
+                Draw
+            else
+                Undecided
+
+        let GameOutcome (game: GameState) : TicTacToeOutcome<Player> = 
+            let lines = Lines game.size
+            let statuses  = Seq.map (fun line -> CheckLine game line) lines
+            let win = Seq.tryFind (fun status -> status <> Undecided && status <> Draw) statuses
+            let draw = Seq.forall (fun status -> status = Draw) statuses
+
+            if Option.isSome win then
+                win.Value
+            elif draw then
+                Draw
+            else
+                Undecided
+
+        let CreateMove (row: int) (col: int) = { row = row; col = col }
+        
+        let MoveGenerator (game: GameState) : List<Move> = 
+            let possibleIndexes = [ for i = 0 to game.size - 1 do
+                                        for j = 0 to game.size - 1 do
+                                            if game.pieces.[i].[j] = "" then 
+                                                yield (i, j)]
+            List.map (fun (x, y) -> CreateMove x y) possibleIndexes
+
+        let ApplyMove (game: GameState) (move: Move) : GameState = 
+            game.pieces.[move.row].[move.col] <- if game.turn = Cross then "X" else "O"
+            game.turn <- if game.turn = Cross then Nought else Cross
+            game
+
+        let UndoMove (game: GameState) (move: Move) : GameState = 
+            game.pieces.[move.row].[move.col] <- ""
+            game
 
 
+        let FindBestMove (game: GameState) : Move = raise (System.NotImplementedException("FindBestMove"))
 
-        let GameOutcome game     = raise (System.NotImplementedException("GameOutcome"))
-
-        let ApplyMove game move  = raise (System.NotImplementedException("ApplyMove"))
-
-        let CreateMove row col   = raise (System.NotImplementedException("CreateMove"))
-
-        let FindBestMove game    = raise (System.NotImplementedException("FindBestMove"))
-
-        let GameStart first size = raise (System.NotImplementedException("GameStart"))
-
+        let GameStart (first: Player) (size: int) = 
+            let pieces = Array.init size (fun _ -> Array.init size (fun _ -> ""))
+            { turn = first; size = size; pieces = pieces }
         // plus other helper functions ...
+
 
 
 

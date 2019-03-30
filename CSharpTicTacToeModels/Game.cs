@@ -5,11 +5,20 @@ namespace QUT.CSharpTicTacToe
 {
     public class Game : ITicTacToeGame<Player>
     {
-        public int Size => throw new System.NotImplementedException("getSize");
-        public Player Turn => throw new System.NotImplementedException("getTurn");
+        private readonly string[,] pieces;
+
+        public Game(Player first, int size, string[,] pieces)
+        {
+            Turn = first;
+            Size = size;
+            this.pieces = pieces;
+        }
+
+        public int Size { get; }
+        public Player Turn { get; }
         public string getPiece(int row, int col)
         {
-            throw new System.NotImplementedException("getPiece");
+            return pieces[row,col];
         }
     }
 }

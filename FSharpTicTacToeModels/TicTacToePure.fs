@@ -23,8 +23,8 @@ namespace QUT
         let CreateMove (row: int) (col: int) : Move = { row = row; col = col }
 
         let ApplyMove (oldState:GameState) (move: Move) : GameState = 
-            let appliedMove = [ for i in 0..oldState.size do
-                                    yield [ for j in 0..oldState.size do
+            let appliedMove = [ for i in 0..oldState.size - 1 do
+                                    yield [ for j in 0..oldState.size - 1 do
                                                 if i = move.row && j = move.col then
                                                     if oldState.turn = Nought then
                                                         yield "O"
@@ -32,7 +32,8 @@ namespace QUT
                                                         yield "X"
                                                 else
                                                     yield oldState.pieces.[i].[j] ] ]
-            { turn = oldState.turn; size = oldState.size; pieces = appliedMove }
+            let nextTurn = if oldState.turn = Nought then Cross else Nought
+            { turn = nextTurn; size = oldState.size; pieces = appliedMove }
 
         // Returns a sequence containing all of the lines on the board: Horizontal, Vertical and Diagonal
         // The number of lines returned should always be (size*2+2)
@@ -61,41 +62,40 @@ namespace QUT
         // has won by filling all of those squares, or a Draw if the line contains at least one Nought and one Cross
         let CheckLine (game:GameState) (line:seq<int*int>) : TicTacToeOutcome<Player> =
             let pieces = List.map (fun (x, y) -> game.pieces.[x].[y]) (Seq.toList line)
-            let draw = List.forall (fun piece -> piece = "X" || piece = "O") pieces
             let won = List.forall (fun piece -> piece <> "" && piece = pieces.[0]) pieces
+            let draw = List.forall (fun piece -> piece = "X" || piece = "O") pieces
 
-            if draw then
+            if won then
+                let player = if pieces.[0] = "X" then Cross else Nought
+                Win (player, line)
+            elif draw then
                 Draw
-            elif won then
-                Win (game.turn, line)
             else
                 Undecided
 
         let GameOutcome (game: GameState) : TicTacToeOutcome<Player> = 
             let lines = Lines game.size
             let statuses  = Seq.map (fun line -> CheckLine game line) lines
-            let win = Seq.tryFind (fun status -> status <> Undecided || status <> Draw) statuses
-            let draw = Seq.tryFind (fun status -> status = Draw) statuses
+            let win = Seq.tryFind (fun status -> status <> Undecided && status <> Draw) statuses
+            let draw = Seq.forall (fun status -> status = Draw) statuses
 
             if Option.isSome win then
                 win.Value
-            elif Option.isSome draw then
+            elif draw then
                 Draw
             else
                 Undecided
 
 
         let GameStart (firstPlayer:Player) (size: int) : GameState = 
-            let pieces = [ for i in 0..size do 
-                            yield [for j in 0..size do
-                                        yield "" ] ]
+            let pieces = List.init size (fun _ -> List.init size (fun _ -> ""))
             { turn = firstPlayer; size = size; pieces = pieces }
 
         let GetTurn (game: GameState) : Player = game.turn
 
         let MoveGenerator (game: GameState) : seq<Move> = 
-            let possibleIndexes = [ for i = 0 to game.size do
-                                        for j = 0 to game.size do
+            let possibleIndexes = [ for i = 0 to game.size - 1 do
+                                        for j = 0 to game.size - 1 do
                                             if game.pieces.[i].[j] = "" then 
                                                 yield (i, j)]
             let possibleMoves = List.map (fun (x, y) -> CreateMove x y) possibleIndexes
@@ -121,7 +121,7 @@ namespace QUT
 
         let MiniMax (game: GameState) : Move = 
             let minMax = GameTheory.MiniMaxGenerator HeuristicScore GetTurn GameOver MoveGenerator ApplyMove
-            let (move, score) = minMax game game.turn
+            let (move, _) = minMax game game.turn
             move.Value
 
             //if Option.isSome move then
@@ -130,7 +130,7 @@ namespace QUT
 
         let MiniMaxWithPruning (game: GameState) : Move = 
             let minMaxPruning = GameTheory.MiniMaxWithAlphaBetaPruningGenerator HeuristicScore GetTurn GameOver MoveGenerator ApplyMove
-            let (move, score) = minMaxPruning System.Int32.MinValue System.Int32.MaxValue game game.turn
+            let (move, _) = minMaxPruning System.Int32.MinValue System.Int32.MaxValue game game.turn
 
             move.Value
 
