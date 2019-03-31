@@ -45,7 +45,9 @@ namespace QUT
         let CheckLine (game:GameState) (line:seq<int*int>) : TicTacToeOutcome<Player> =
             let pieces = List.map (fun (x, y) -> game.pieces.[x].[y]) (Seq.toList line)
             let won = List.forall (fun piece -> piece <> "" && piece = pieces.[0]) pieces
-            let draw = List.forall (fun piece -> piece = "X" || piece = "O") pieces
+            let oneCross = List.exists (fun piece -> piece = "X") pieces
+            let oneNought = List.exists (fun piece -> piece = "O") pieces
+            let draw = oneCross && oneNought
 
             if won then
                 let player = if pieces.[0] = "X" then Cross else Nought
@@ -84,10 +86,60 @@ namespace QUT
 
         let UndoMove (game: GameState) (move: Move) : GameState = 
             game.pieces.[move.row].[move.col] <- ""
+            game.turn <- if game.turn = Cross then Nought else Cross
             game
 
+        let HeuristicScore (game: GameState) (player: Player) : int =
+            match GameOutcome game with
+            | Draw -> 0
+            | Win (winner, _) -> if winner = player then 1 else -1
+            | Undecided -> raise(System.ArgumentException("No Score for Unfinished Game"))
 
-        let FindBestMove (game: GameState) : Move = raise (System.NotImplementedException("FindBestMove"))
+        let GetTurn (game: GameState) : Player = game.turn
+
+        let GameOver (game: GameState) : bool = 
+            let over = GameOutcome game
+
+            if over = Undecided then
+                false
+            else
+                true
+
+        let FindBestMove (game: GameState) : Move = 
+            let rec MutableMinMax (game: GameState) (player: Player) : Option<Move> =
+                let over = GameOver game
+            
+                if over then 
+                    None
+                else
+                    let mutable alpha = System.Int32.MinValue
+                    let mutable beta = System.Int32.MaxValue
+                    let nextPerspective = GetTurn game
+                    let possibleMoves = MoveGenerator game
+                    let gameState = List.map (fun move -> ApplyMove game move) possibleMoves
+                    let scores = List.map (fun game -> HeuristicScore game game.turn) gameState
+
+                    if nextPerspective = game.turn then
+                        let idealScore = List.max scores
+                        alpha <- max alpha idealScore
+
+                        if alpha >= beta then
+                            None
+                        else
+                            let index = List.findIndex (fun score -> score = idealScore) scores
+                            Some possibleMoves.[index]
+                    else
+                        let idealScore = List.min scores
+                        beta <- min beta idealScore
+
+                        if alpha >= beta then
+                            None
+                        else
+                            let index = List.findIndex (fun score -> score = idealScore) scores
+                            Some possibleMoves.[index]
+
+            let move = MutableMinMax game game.turn
+            move.Value
 
         let GameStart (first: Player) (size: int) = 
             let pieces = Array.init size (fun _ -> Array.init size (fun _ -> ""))

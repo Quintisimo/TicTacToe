@@ -63,7 +63,9 @@ namespace QUT
         let CheckLine (game:GameState) (line:seq<int*int>) : TicTacToeOutcome<Player> =
             let pieces = List.map (fun (x, y) -> game.pieces.[x].[y]) (Seq.toList line)
             let won = List.forall (fun piece -> piece <> "" && piece = pieces.[0]) pieces
-            let draw = List.forall (fun piece -> piece = "X" || piece = "O") pieces
+            let oneCross = List.exists (fun piece -> piece = "X") pieces
+            let oneNought = List.exists (fun piece -> piece = "O") pieces
+            let draw = oneCross && oneNought
 
             if won then
                 let player = if pieces.[0] = "X" then Cross else Nought
@@ -85,7 +87,6 @@ namespace QUT
                 Draw
             else
                 Undecided
-
 
         let GameStart (firstPlayer:Player) (size: int) : GameState = 
             let pieces = List.init size (fun _ -> List.init size (fun _ -> ""))
@@ -110,14 +111,10 @@ namespace QUT
                 true
 
         let HeuristicScore (game: GameState) (player: Player) : int =
-            let outcome = GameOutcome game
-
-            if outcome = Draw then
-                0 
-            elif outcome = Undecided then
-                -1
-            else
-                1
+            match GameOutcome game with
+            | Draw -> 0
+            | Win (winner, _) -> if winner = player then 1 else -1
+            | Undecided -> raise(System.ArgumentException("No Score for Unfinished Game"))
 
         let MiniMax (game: GameState) : Move = 
             let minMax = GameTheory.MiniMaxGenerator HeuristicScore GetTurn GameOver MoveGenerator ApplyMove
@@ -131,7 +128,6 @@ namespace QUT
         let MiniMaxWithPruning (game: GameState) : Move = 
             let minMaxPruning = GameTheory.MiniMaxWithAlphaBetaPruningGenerator HeuristicScore GetTurn GameOver MoveGenerator ApplyMove
             let (move, _) = minMaxPruning System.Int32.MinValue System.Int32.MaxValue game game.turn
-
             move.Value
 
             //if Option.isSome move then

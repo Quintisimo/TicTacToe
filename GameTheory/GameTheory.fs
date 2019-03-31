@@ -25,13 +25,7 @@ namespace QUT
                     let idealTuple = Seq.find (fun (_, score) -> score = idealScore) tuples
                     let newGameState = Seq.find (fun gameState -> MiniMax gameState perspective = idealTuple) gameStates
                     let idealMove = Seq.tryFind (fun move -> applyMove game move = newGameState) moves
-                    let over = gameOver newGameState
-
-                    if over then
-                        (idealMove, idealScore)
-                    else
-                        let _ = MiniMax newGameState perspective
-                        (idealMove, idealScore)               
+                    (idealMove, idealScore)               
             NodeCounter.Reset()
             MiniMax
 
@@ -55,29 +49,24 @@ namespace QUT
                     if nextPerspective = perspective then
                         let idealScore = Seq.max scores
                         let newAlpha = max idealScore alpha
-                        let idealTuple = Seq.find (fun (_, score) -> score = idealScore) tuples
-                        let newGameState = Seq.find (fun gameState -> MiniMax alpha beta gameState perspective = idealTuple) gameStates
-                        let idealMove = Seq.tryFind (fun move -> applyMove oldState move = newGameState) moves
-                        let over = gameOver newGameState
 
-                        if beta <= newAlpha || over then
-                            (idealMove, newAlpha)
+                        if beta <= newAlpha then
+                            (None, newAlpha)
                         else
-                            let _ = MiniMax alpha beta newGameState nextPerspective
+                            let idealTuple = Seq.find (fun (_, score) -> score = idealScore) tuples
+                            let newGameState = Seq.find (fun gameState -> MiniMax alpha beta gameState perspective = idealTuple) gameStates
+                            let idealMove = Seq.tryFind (fun move -> applyMove oldState move = newGameState) moves
                             (idealMove, newAlpha)
 
                     else
                         let idealScore = Seq.min scores
                         let newBeta = min idealScore beta
-                        let idealTuple = Seq.find (fun (_, score) -> score = idealScore) tuples
-                        let newGameState = Seq.find (fun gameState -> MiniMax alpha beta gameState perspective = idealTuple) gameStates
-                        let idealMove = Seq.tryFind (fun move -> applyMove oldState move = newGameState) moves
-                        let over = gameOver newGameState
-
-                        if newBeta <= alpha || over then
-                            (idealMove, newBeta)
+                        if newBeta <= alpha then
+                            (None, newBeta)
                         else
-                            let _ = MiniMax alpha beta newGameState perspective
+                            let idealTuple = Seq.find (fun (_, score) -> score = idealScore) tuples
+                            let newGameState = Seq.find (fun gameState -> MiniMax alpha beta gameState perspective = idealTuple) gameStates
+                            let idealMove = Seq.tryFind (fun move -> applyMove oldState move = newGameState) moves
                             (idealMove, newBeta)
             NodeCounter.Reset()
             MiniMax
