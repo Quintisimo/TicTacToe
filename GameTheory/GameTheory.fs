@@ -14,7 +14,7 @@ namespace QUT
                 else
                     let moves = Seq.toList (moveGenerator game)
                     let stateAndMove = List.map (fun move -> (applyMove game move, move)) moves
-                    let tuples = List.map (fun (gameState, move) -> MiniMax gameState perspective) stateAndMove
+                    let tuples = List.map (fun (gameState, _) -> MiniMax gameState perspective) stateAndMove
                     let scores = List.map (fun (_, score) -> score) tuples
 
                     let nextPerspective = getTurn game
@@ -41,33 +41,45 @@ namespace QUT
                 else
                     let moves = Seq.toList (moveGenerator oldState)
                     let stateAndMove = List.map (fun move -> (applyMove oldState move, move)) moves
-                    let tuples = List.map (fun (gameState, move)  -> MiniMax alpha beta gameState perspective) stateAndMove
-                    let scores = List.map (fun (_, score) -> score) tuples
+
+                    let rec maximizingPlayer (tuples: ('Game * 'Move)list) (counter: int) (alpha: int) (beta: int) (previousScore: int) =
+                        let (gameState, move) = tuples.[counter]
+                        let nextPespective = getTurn gameState
+                        let (_, score) = MiniMax alpha beta gameState nextPespective
+                        let idealScore = max previousScore score
+                        let newAlpha = max alpha idealScore
+
+                        if newAlpha >= beta then
+                            (Some move, idealScore)
+                        else
+                            let newCounter = counter + 1
+                            if newCounter < tuples.Length - 1 then
+                                maximizingPlayer tuples newCounter newAlpha beta idealScore
+                            else
+                                (Some move, idealScore)
+
+                    let rec minimizingPlayer (tuples: ('Game * 'Move)list) (counter: int) (alpha: int) (beta: int) (previousScore: int) = 
+                        let (gameState, move) = tuples.[counter]
+                        let nextPerspective = getTurn gameState
+                        let (_, score) = MiniMax alpha beta gameState nextPerspective
+                        let idealScore = min previousScore score
+                        let newBeta = min beta idealScore
+
+                        if alpha >= newBeta then
+                            (Some move, idealScore)
+                        else
+                            let newCounter = counter + 1
+                            if newCounter < tuples.Length - 1 then
+                                minimizingPlayer tuples newCounter alpha newBeta idealScore
+                            else
+                                (Some move, idealScore)
 
                     let nextPerspective = getTurn oldState
 
                     if nextPerspective = perspective then
-                        let idealScore = List.max scores
-                        let newAlpha = max idealScore alpha
-
-                        if beta <= newAlpha then
-                            (None, newAlpha)
-                        else
-                            let idealTuple = List.findIndex (fun (_, score) -> score = idealScore) tuples
-                            let idealScore = scores.[idealTuple]
-                            let (_, idealMove) = stateAndMove.[idealTuple]
-                            (Some idealMove, newAlpha)
-
+                        maximizingPlayer stateAndMove 0 alpha beta System.Int32.MinValue
                     else
-                        let idealScore = List.min scores
-                        let newBeta = min idealScore beta
-                        if newBeta <= alpha then
-                            (None, newBeta)
-                        else
-                            let ideal = List.findIndex (fun (_, score) -> score = idealScore) tuples
-                            let idealScore = scores.[ideal]
-                            let (_, idealMove) = stateAndMove.[ideal]
-                            (Some idealMove, newBeta)
+                        minimizingPlayer stateAndMove 0 alpha beta System.Int32.MaxValue
             NodeCounter.Reset()
             MiniMax
              
