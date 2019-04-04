@@ -13,8 +13,8 @@ namespace QUT
                     (None, score)
                 else
                     let moves = Seq.toList (moveGenerator game)
-                    let gameStates = List.map (fun move -> applyMove game move) moves
-                    let tuples = List.map (fun gameState -> MiniMax gameState perspective) gameStates
+                    let stateAndMove = List.map (fun move -> (applyMove game move, move)) moves
+                    let tuples = List.map (fun (gameState, move) -> MiniMax gameState perspective) stateAndMove
                     let scores = List.map (fun (_, score) -> score) tuples
 
                     let nextPerspective = getTurn game
@@ -22,10 +22,10 @@ namespace QUT
                                      | true -> List.max scores
                                      | false -> List.min scores
 
-                    let idealTuple = List.find (fun (_, score) -> score = idealScore) tuples
-                    let newGameState = List.find (fun gameState -> MiniMax gameState perspective = idealTuple) gameStates
-                    let idealMove = List.tryFind (fun move -> applyMove game move = newGameState) moves
-                    (idealMove, idealScore)               
+                    let ideal = List.findIndex (fun (_, score) -> score = idealScore) tuples
+                    let idealScore = scores.[ideal]
+                    let (_, idealMove) = stateAndMove.[ideal]
+                    (Some idealMove, idealScore)               
             NodeCounter.Reset()
             MiniMax
 
@@ -40,8 +40,8 @@ namespace QUT
                     (None, score)
                 else
                     let moves = Seq.toList (moveGenerator oldState)
-                    let gameStates = List.map (fun move -> applyMove oldState move) moves
-                    let tuples = List.map (fun gameState -> MiniMax alpha beta gameState perspective) gameStates
+                    let stateAndMove = List.map (fun move -> (applyMove oldState move, move)) moves
+                    let tuples = List.map (fun (gameState, move)  -> MiniMax alpha beta gameState perspective) stateAndMove
                     let scores = List.map (fun (_, score) -> score) tuples
 
                     let nextPerspective = getTurn oldState
@@ -53,10 +53,10 @@ namespace QUT
                         if beta <= newAlpha then
                             (None, newAlpha)
                         else
-                            let idealTuple = List.find (fun (_, score) -> score = idealScore) tuples
-                            let newGameState = List.find (fun gameState -> MiniMax alpha beta gameState perspective = idealTuple) gameStates
-                            let idealMove = List.tryFind (fun move -> applyMove oldState move = newGameState) moves
-                            (idealMove, newAlpha)
+                            let idealTuple = List.findIndex (fun (_, score) -> score = idealScore) tuples
+                            let idealScore = scores.[idealTuple]
+                            let (_, idealMove) = stateAndMove.[idealTuple]
+                            (Some idealMove, newAlpha)
 
                     else
                         let idealScore = List.min scores
@@ -64,10 +64,10 @@ namespace QUT
                         if newBeta <= alpha then
                             (None, newBeta)
                         else
-                            let idealTuple = List.find (fun (_, score) -> score = idealScore) tuples
-                            let newGameState = List.find (fun gameState -> MiniMax alpha beta gameState perspective = idealTuple) gameStates
-                            let idealMove = List.tryFind (fun move -> applyMove oldState move = newGameState) moves
-                            (idealMove, newBeta)
+                            let ideal = List.findIndex (fun (_, score) -> score = idealScore) tuples
+                            let idealScore = scores.[ideal]
+                            let (_, idealMove) = stateAndMove.[ideal]
+                            (Some idealMove, newBeta)
             NodeCounter.Reset()
             MiniMax
              
