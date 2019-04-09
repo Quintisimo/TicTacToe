@@ -106,40 +106,38 @@ namespace QUT
                 true
 
         let FindBestMove (game: GameState) : Move = 
-            let rec MutableMinMax (game: GameState) (player: Player) : Option<Move> =
-                let over = GameOver game
+            let over = GameOver game
             
-                if over then 
-                    None
-                else
-                    let mutable alpha = System.Int32.MinValue
-                    let mutable beta = System.Int32.MaxValue
-                    let nextPerspective = GetTurn game
-                    let possibleMoves = MoveGenerator game
-                    let gameState = List.map (fun move -> ApplyMove game move) possibleMoves
-                    let scores = List.map (fun game -> HeuristicScore game game.turn) gameState
+            if over then 
+                raise(System.Exception("No remaining moves"))
+            else
+                let mutable alpha = System.Int32.MinValue
+                let mutable beta = System.Int32.MaxValue
+                let nextPerspective = GetTurn game
+                let possibleMoves = MoveGenerator game
+                let gameState = List.map (fun move -> ApplyMove game move) possibleMoves
+                let scores = List.map (fun game -> HeuristicScore game game.turn) gameState
 
-                    if nextPerspective = game.turn then
-                        let idealScore = List.max scores
-                        alpha <- max alpha idealScore
+                if nextPerspective = game.turn then
+                    let idealScore = List.max scores
+                    alpha <- max alpha idealScore
 
-                        if alpha >= beta then
-                            None
-                        else
-                            let index = List.findIndex (fun score -> score = idealScore) scores
-                            Some possibleMoves.[index]
+                    if alpha >= beta then
+                        let index = List.findIndex (fun score -> score = idealScore) scores
+                        possibleMoves.[index]
                     else
-                        let idealScore = List.min scores
-                        beta <- min beta idealScore
+                        let index = List.findIndex (fun score -> score = idealScore) scores
+                        possibleMoves.[index]
+                else
+                    let idealScore = List.min scores
+                    beta <- min beta idealScore
 
-                        if alpha >= beta then
-                            None
-                        else
-                            let index = List.findIndex (fun score -> score = idealScore) scores
-                            Some possibleMoves.[index]
-
-            let move = MutableMinMax game game.turn
-            move.Value
+                    if alpha >= beta then
+                        let index = List.findIndex (fun score -> score = idealScore) scores
+                        possibleMoves.[index]
+                    else
+                        let index = List.findIndex (fun score -> score = idealScore) scores
+                        possibleMoves.[index]
 
         let GameStart (first: Player) (size: int) = 
             let pieces = Array.init size (fun _ -> Array.init size (fun _ -> ""))
@@ -153,8 +151,8 @@ namespace QUT
         type WithAlphaBetaPruning() =
             override this.ToString()         = "Impure F# with Alpha Beta Pruning";
             interface ITicTacToeModel<GameState, Move, Player> with
-                member this.Cross with get()             = raise (System.NotImplementedException("getCross"))
-                member this.Nought with get()            = raise (System.NotImplementedException("getNought"))
+                member this.Cross with get()             = Cross
+                member this.Nought with get()            = Nought
                 member this.GameStart(firstPlayer, size) = GameStart firstPlayer size
                 member this.CreateMove(row, col)         = CreateMove row col
                 member this.GameOutcome(game)            = GameOutcome game 
