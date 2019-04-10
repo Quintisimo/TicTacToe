@@ -79,15 +79,14 @@ namespace QUT
                                                 yield (i, j)]
             List.map (fun (x, y) -> CreateMove x y) possibleIndexes
 
-        let ApplyMove (game: GameState) (move: Move) : GameState = 
+        let ApplyMove (game: GameState) (move: Move) = 
             game.pieces.[move.row].[move.col] <- if game.turn = Cross then "X" else "O"
             game.turn <- if game.turn = Cross then Nought else Cross
             game
 
-        let UndoMove (game: GameState) (move: Move) : GameState = 
+        let UndoMove (game: GameState) (move: Move) = 
             game.pieces.[move.row].[move.col] <- ""
             game.turn <- if game.turn = Cross then Nought else Cross
-            game
 
         let HeuristicScore (game: GameState) (player: Player) : int =
             match GameOutcome game with
@@ -106,38 +105,63 @@ namespace QUT
                 true
 
         let FindBestMove (game: GameState) : Move = 
-            let over = GameOver game
-            
-            if over then 
-                raise(System.Exception("No remaining moves"))
-            else
-                let mutable alpha = System.Int32.MinValue
-                let mutable beta = System.Int32.MaxValue
-                let nextPerspective = GetTurn game
-                let possibleMoves = MoveGenerator game
-                let gameState = List.map (fun move -> ApplyMove game move) possibleMoves
-                let scores = List.map (fun game -> HeuristicScore game game.turn) gameState
-
-                if nextPerspective = game.turn then
-                    let idealScore = List.max scores
-                    alpha <- max alpha idealScore
-
-                    if alpha >= beta then
-                        let index = List.findIndex (fun score -> score = idealScore) scores
-                        possibleMoves.[index]
-                    else
-                        let index = List.findIndex (fun score -> score = idealScore) scores
-                        possibleMoves.[index]
+            let rec MutableMiniMax (game: GameState) (perspective: Player) : Option<Move> * int =
+                let over = GameOver game
+                
+                if over then 
+                    let score = HeuristicScore game perspective
+                    (None, score)
                 else
-                    let idealScore = List.min scores
-                    beta <- min beta idealScore
+                    let mutable alpha = System.Int32.MinValue
+                    let mutable beta = System.Int32.MaxValue
+                    let possibleMoves = MoveGenerator game
+                    //let games (move: Move) =
+                    //    let newState = ApplyMove game move
+                    //    UndoMove game move
+                    //    newState
 
-                    if alpha >= beta then
-                        let index = List.findIndex (fun score -> score = idealScore) scores
-                        possibleMoves.[index]
+                    let gameStateAndMove = List.map (fun move -> (ApplyMove game move, move)) possibleMoves
+
+                    let rec maximizingPlayer (tuples: (GameState * Move)list) (counter: int) (previousScore: int) =
+                        let (game, move) = tuples.[counter]
+                        let nextPerspective = GetTurn game
+                        let (_, score) = MutableMiniMax game nextPerspective
+                        let idealScore = max previousScore score
+                        alpha <- max alpha idealScore
+
+                        if alpha >= beta then
+                            (Some move, idealScore)
+                        else
+                            let newCounter = counter + 1
+                            if newCounter < tuples.Length - 1 then
+                                maximizingPlayer tuples newCounter idealScore
+                            else
+                                (Some move, idealScore)
+
+                    let rec minimizingPlayer (tuples: (GameState * Move)list) (counter: int) (previousScore: int) =
+                        let (game, move) = tuples.[counter]
+                        let nextPerspective = GetTurn game
+                        let (_, score) = MutableMiniMax game nextPerspective
+                        let idealScore = min previousScore score
+                        beta <- min beta idealScore
+
+                        if alpha >= beta then
+                            (Some move, idealScore)
+                        else
+                            let newCounter = counter + 1
+                            if newCounter < tuples.Length - 1 then
+                                minimizingPlayer tuples newCounter idealScore
+                            else
+                                (Some move, idealScore)
+                    let nextPerspective = GetTurn game
+
+                    if nextPerspective = game.turn then
+                        maximizingPlayer gameStateAndMove 0 System.Int32.MinValue
                     else
-                        let index = List.findIndex (fun score -> score = idealScore) scores
-                        possibleMoves.[index]
+                        minimizingPlayer gameStateAndMove 0 System.Int32.MaxValue
+
+            let (move, _) = MutableMiniMax game game.turn
+            move.Value
 
         let GameStart (first: Player) (size: int) = 
             let pieces = Array.init size (fun _ -> Array.init size (fun _ -> ""))
