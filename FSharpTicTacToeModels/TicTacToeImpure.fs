@@ -104,63 +104,77 @@ namespace QUT
             else
                 true
 
-        let rec MutableMiniMax (game: GameState) (perspective: Player) : Option<Move> * int =
+        let rec IterativeMiniMax (game: GameState) (perspective: Player) (alpha: int) (beta: int) =
             let over = GameOver game
-            
-            if over then 
+            let mutable alpha = alpha
+            let mutable beta = beta
+
+            if over then
                 let score = HeuristicScore game perspective
                 (None, score)
             else
-                let mutable alpha = System.Int32.MinValue
-                let mutable beta = System.Int32.MaxValue
-                let possibleMoves = MoveGenerator game
-                let games (move: Move) =
-                    let newState = ApplyMove game move
-                    UndoMove game move
-                    newState
-
-                let gameStateAndMove = List.map (fun move -> (ApplyMove game move, move)) possibleMoves
-
-                let rec maximizingPlayer (tuples: (GameState * Move)list) (counter: int) (previousScore: int) =
-                    let (game, move) = tuples.[counter]
-                    let nextPerspective = GetTurn game
-                    let (_, score) = MutableMiniMax game nextPerspective
-                    let idealScore = max previousScore score
-                    alpha <- max alpha idealScore
-
-                    if alpha >= beta then
-                        (Some move, idealScore)
-                    else
-                        let newCounter = counter + 1
-                        if newCounter < tuples.Length - 1 then
-                            maximizingPlayer tuples newCounter idealScore
-                        else
-                            (Some move, idealScore)
-
-                let rec minimizingPlayer (tuples: (GameState * Move)list) (counter: int) (previousScore: int) =
-                    let (game, move) = tuples.[counter]
-                    let nextPerspective = GetTurn game
-                    let (_, score) = MutableMiniMax game nextPerspective
-                    let idealScore = min previousScore score
-                    beta <- min beta idealScore
-
-                    if alpha >= beta then
-                        (Some move, idealScore)
-                    else
-                        let newCounter = counter + 1
-                        if newCounter < tuples.Length - 1 then
-                            minimizingPlayer tuples newCounter idealScore
-                        else
-                            (Some move, idealScore)
+                let moves = MoveGenerator game
                 let nextPerspective = GetTurn game
 
-                if nextPerspective = game.turn then
-                    maximizingPlayer gameStateAndMove 0 System.Int32.MinValue
+
+                if perspective = nextPerspective then
+                    let mutable best = false
+                    let mutable count = 0
+                    let mutable bestScore = System.Int32.MinValue
+                    let mutable bestMove: Option<Move> = None 
+
+                    while best <> true do
+                        let newGameState  = ApplyMove game moves.[count]
+                        let nextPerspective = GetTurn newGameState
+                        let (_, score) = IterativeMiniMax newGameState nextPerspective alpha beta
+                        bestScore <- max bestScore score
+                        alpha <- max alpha bestScore
+
+                        if alpha >= beta then
+                            bestMove <- Some moves.[count]
+                            best <- true
+                        else
+                            best <- false
+
+                        count <- count + 1
+                        if count < moves.Length then
+                            best <- false
+                        else
+                            bestMove <- Some moves.[count - 1]
+                            best <- true
+                    (bestMove, bestScore)
                 else
-                    minimizingPlayer gameStateAndMove 0 System.Int32.MaxValue
+                    let mutable best = false
+                    let mutable count = 0
+                    let mutable bestScore = System.Int32.MaxValue
+                    let mutable bestMove: Option<Move> = None
+
+                    while best <> true do
+                        let newGameState = ApplyMove game moves.[count]
+                        let nextPerspective = GetTurn newGameState
+                        let (_, score) = IterativeMiniMax newGameState perspective alpha beta
+                        bestScore <- min bestScore score
+                        beta <- min beta bestScore
+
+                        if alpha >= beta then
+                            bestMove <- Some moves.[count]
+                            best <- true
+                        else
+                            best <- false
+
+                        count <- count + 1
+                        if count < moves.Length then
+                            best <- false
+                        else
+                            bestMove <- Some moves.[count - 1]
+                            best <- true
+                    (bestMove, bestScore)
+
+
+
 
         let FindBestMove (game: GameState) : Move =
-            let (move, _) = MutableMiniMax game game.turn
+            let (move, _) = IterativeMiniMax game game.turn System.Int32.MinValue System.Int32.MaxValue
             move.Value
 
         let GameStart (first: Player) (size: int) = 
