@@ -105,13 +105,15 @@ namespace QUT
                 true
 
         let rec IterativeMiniMax (game: GameState) (perspective: Player) (alpha: int) (beta: int) =
+            NodeCounter.Increment()
             let over = GameOver game
             let mutable alpha = alpha
             let mutable beta = beta
+            let mutable bestMove: Option<Move> = None 
 
             if over then
                 let score = HeuristicScore game perspective
-                (None, score)
+                (bestMove, score)
             else
                 let moves = MoveGenerator game
                 let nextPerspective = GetTurn game
@@ -121,7 +123,6 @@ namespace QUT
                     let mutable best = false
                     let mutable count = 0
                     let mutable bestScore = System.Int32.MinValue
-                    let mutable bestMove: Option<Move> = None 
 
                     while best <> true do
                         let newGameState  = ApplyMove game moves.[count]
@@ -129,19 +130,15 @@ namespace QUT
                         let (_, score) = IterativeMiniMax newGameState nextPerspective alpha beta
                         bestScore <- max bestScore score
                         alpha <- max alpha bestScore
-
-                        if alpha >= beta then
-                            bestMove <- Some moves.[count]
-                            best <- true
-                        else
-                            best <- false
-
                         count <- count + 1
-                        if count < moves.Length then
-                            best <- false
-                        else
+
+                        if alpha >= beta || count > moves.Length - 1 then
                             bestMove <- Some moves.[count - 1]
                             best <- true
+                        else
+                            UndoMove game moves.[count - 1]
+                            best <- false
+
                     (bestMove, bestScore)
                 else
                     let mutable best = false
@@ -152,28 +149,24 @@ namespace QUT
                     while best <> true do
                         let newGameState = ApplyMove game moves.[count]
                         let nextPerspective = GetTurn newGameState
-                        let (_, score) = IterativeMiniMax newGameState perspective alpha beta
+                        let (_, score) = IterativeMiniMax newGameState nextPerspective alpha beta
                         bestScore <- min bestScore score
                         beta <- min beta bestScore
-
-                        if alpha >= beta then
-                            bestMove <- Some moves.[count]
-                            best <- true
-                        else
-                            best <- false
-
                         count <- count + 1
-                        if count < moves.Length then
-                            best <- false
-                        else
+
+                        if alpha >= beta || count > moves.Length - 1 then
                             bestMove <- Some moves.[count - 1]
                             best <- true
+                        else
+                            UndoMove game moves.[count - 1]
+                            best <- false
                     (bestMove, bestScore)
 
 
 
 
         let FindBestMove (game: GameState) : Move =
+            NodeCounter.Reset()
             let (move, _) = IterativeMiniMax game game.turn System.Int32.MinValue System.Int32.MaxValue
             move.Value
 

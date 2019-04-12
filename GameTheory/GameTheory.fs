@@ -54,7 +54,7 @@ namespace QUT
                         else
                             let newCounter = counter + 1
                             if newCounter < tuples.Length - 1 then
-                                maximizingPlayer tuples newCounter newAlpha beta idealScore
+                                maximizingPlayer tuples newCounter alpha beta idealScore
                             else
                                 (Some move, idealScore)
 
@@ -70,7 +70,7 @@ namespace QUT
                         else
                             let newCounter = counter + 1
                             if newCounter < tuples.Length - 1 then
-                                minimizingPlayer tuples newCounter alpha newBeta idealScore
+                                minimizingPlayer tuples newCounter alpha beta idealScore
                             else
                                 (Some move, idealScore)
 
