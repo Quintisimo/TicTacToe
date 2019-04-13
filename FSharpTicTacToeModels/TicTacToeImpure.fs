@@ -94,8 +94,6 @@ namespace QUT
             | Win (winner, _) -> if winner = player then 1 else -1
             | Undecided -> raise(System.ArgumentException("No Score for Unfinished Game"))
 
-        let GetTurn (game: GameState) : Player = game.turn
-
         let GameOver (game: GameState) : bool = 
             let over = GameOutcome game
 
@@ -107,63 +105,52 @@ namespace QUT
         let rec IterativeMiniMax (game: GameState) (perspective: Player) (alpha: int) (beta: int) =
             NodeCounter.Increment()
             let over = GameOver game
-            let mutable alpha = alpha
-            let mutable beta = beta
-            let mutable bestMove: Option<Move> = None 
+            let mutable bestMove: Option<Move> = None
+            let mutable bestScore = 0
 
             if over then
-                let score = HeuristicScore game perspective
-                (bestMove, score)
+                bestScore <- HeuristicScore game perspective
+                (bestMove, bestScore)
             else
                 let moves = MoveGenerator game
-                let nextPerspective = GetTurn game
+                let mutable best = false
+                let mutable count = 0
 
+                while best <> true do
+                    let nextPerspective = game.turn
+                    let mutable previousScore = if perspective = nextPerspective then System.Int32.MinValue else System.Int32.MaxValue
 
-                if perspective = nextPerspective then
-                    let mutable best = false
-                    let mutable count = 0
-                    let mutable bestScore = System.Int32.MinValue
-
-                    while best <> true do
+                    if perspective = nextPerspective then
                         let newGameState  = ApplyMove game moves.[count]
-                        let nextPerspective = GetTurn newGameState
-                        let (_, score) = IterativeMiniMax newGameState nextPerspective alpha beta
-                        bestScore <- max bestScore score
-                        alpha <- max alpha bestScore
+                        let (_, score) = IterativeMiniMax newGameState newGameState.turn alpha beta
+                        previousScore <- max previousScore score
+                        let newAlpha = max alpha previousScore
+                        UndoMove newGameState moves.[count]
                         count <- count + 1
 
-                        if alpha >= beta || count > moves.Length - 1 then
+                        if newAlpha >= beta || count > moves.Length - 1 then
                             bestMove <- Some moves.[count - 1]
+                            bestScore <- newAlpha
                             best <- true
                         else
-                            UndoMove game moves.[count - 1]
                             best <- false
-
-                    (bestMove, bestScore)
-                else
-                    let mutable best = false
-                    let mutable count = 0
-                    let mutable bestScore = System.Int32.MaxValue
-                    let mutable bestMove: Option<Move> = None
-
-                    while best <> true do
+                    else
                         let newGameState = ApplyMove game moves.[count]
-                        let nextPerspective = GetTurn newGameState
-                        let (_, score) = IterativeMiniMax newGameState nextPerspective alpha beta
-                        bestScore <- min bestScore score
-                        beta <- min beta bestScore
+                        let (_, score) = IterativeMiniMax newGameState newGameState.turn alpha beta
+                        previousScore <- min previousScore score
+                        let newBeta = min beta previousScore
+                        UndoMove newGameState moves.[count]
                         count <- count + 1
 
-                        if alpha >= beta || count > moves.Length - 1 then
+                        if alpha >= newBeta || count > moves.Length - 1 then
                             bestMove <- Some moves.[count - 1]
+                            bestScore <- newBeta
                             best <- true
                         else
-                            UndoMove game moves.[count - 1]
                             best <- false
-                    (bestMove, bestScore)
 
-
-
+                (bestMove, bestScore)
+                        
 
         let FindBestMove (game: GameState) : Move =
             NodeCounter.Reset()
