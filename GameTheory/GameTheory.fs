@@ -42,44 +42,35 @@ namespace QUT
                     let moves = Seq.toList (moveGenerator oldState)
                     let stateAndMove = List.map (fun move -> (applyMove oldState move, move)) moves
 
-                    let rec maximizingPlayer (tuples: ('Game * 'Move)list) (counter: int) (alpha: int) (beta: int) (previousScore: int) =
-                        let (gameState, move) = tuples.[counter]
-                        let nextPespective = getTurn gameState
-                        let (_, score) = MiniMax alpha beta gameState nextPespective
-                        let idealScore = max previousScore score
-                        let newAlpha = max alpha idealScore
+                    let rec pruning  (tuples: ('Game * 'Move)list) (counter: int) (alpha: int) (beta: int) =
+                        if alpha > beta then
+                            let (gameState, move) = tuples.[counter]
+                            let nextPerspective = getTurn gameState
 
-                        if newAlpha >= beta then
-                            (Some move, idealScore)
-                        else
-                            let newCounter = counter + 1
-                            if newCounter < tuples.Length - 1 then
-                                maximizingPlayer tuples newCounter alpha beta idealScore
+                            if nextPerspective = perspective then
+                                (Some move, alpha)
                             else
-                                (Some move, idealScore)
-
-                    let rec minimizingPlayer (tuples: ('Game * 'Move)list) (counter: int) (alpha: int) (beta: int) (previousScore: int) = 
-                        let (gameState, move) = tuples.[counter]
-                        let nextPerspective = getTurn gameState
-                        let (_, score) = MiniMax alpha beta gameState nextPerspective
-                        let idealScore = min previousScore score
-                        let newBeta = min beta idealScore
-
-                        if alpha >= newBeta then
-                            (Some move, idealScore)
+                                (Some move, beta)
                         else
+                            let (gameState, move) = tuples.[counter]
+                            let nextPerspective = getTurn gameState
+                            let (_, score) = MiniMax alpha beta gameState nextPerspective
+                            let newAlpha = match (nextPerspective = perspective) with 
+                                           | true -> max alpha score
+                                           | false -> alpha
+
+                            let newBeta = match (nextPerspective <> perspective) with
+                                           | true -> min beta score
+                                           | false -> beta
+
                             let newCounter = counter + 1
-                            if newCounter < tuples.Length - 1 then
-                                minimizingPlayer tuples newCounter alpha beta idealScore
+
+                            if newCounter > tuples.Length - 2 then
+                                (Some move, score)
                             else
-                                (Some move, idealScore)
+                                pruning tuples newCounter newAlpha newBeta
 
-                    let nextPerspective = getTurn oldState
-
-                    if nextPerspective = perspective then
-                        maximizingPlayer stateAndMove 0 alpha beta System.Int32.MinValue
-                    else
-                        minimizingPlayer stateAndMove 0 alpha beta System.Int32.MaxValue
+                    pruning stateAndMove 0 alpha beta
             NodeCounter.Reset()
             MiniMax
              
