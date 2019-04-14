@@ -20,6 +20,36 @@ namespace QUT.CSharpTicTacToe
         {
             return new Move(row, col);
         }
+
+        private bool GameOver(Game game)
+        {
+            TicTacToeOutcome<Player> outcome = GameOutcome(game);
+
+            if (outcome == TicTacToeOutcome<Player>.Undecided)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        private int HeuristicScore(Game game, Move move)
+        {
+            TicTacToeOutcome<Player> outcome = GameOutcome(game);
+            return outcome.Tag;
+        }
+
+        //public Tuple<Move?, int> IterativeMiniMax(Game game, Player perspective)
+        //{
+        //    bool over = GameOver(game);
+
+        //    if (over)
+        //    {
+        //        int score =
+        //    }
+        //}
         public Move FindBestMove(Game game)
         {
             throw new System.NotImplementedException("FindBestMove");
@@ -95,9 +125,9 @@ namespace QUT.CSharpTicTacToe
 
             if (!outcomes.Contains(TicTacToeOutcome<Player>.Undecided) && !outcomes.Contains(TicTacToeOutcome<Player>.Draw))
             {
-                return outcomes.Find(o => o != TicTacToeOutcome<Player>.Undecided && o != TicTacToeOutcome<Player>.Draw);
+                return outcomes.Find(o => o.IsWin);
             }
-            else if (outcomes.FindAll(o => o == TicTacToeOutcome<Player>.Draw).Count == outcomes.Count)
+            else if (outcomes.FindAll(o => o.IsUndecided).Count == outcomes.Count)
             {
                 return TicTacToeOutcome<Player>.Draw;
             } else
