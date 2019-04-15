@@ -122,6 +122,9 @@ namespace QUT
                     let newGameState  = ApplyMove game moves.[count]
                     let nextPerspective = newGameState.turn
                     let (_, score) = IterativeMiniMax newGameState nextPerspective alpha beta
+                    UndoMove game moves.[count]
+                    bestMove <- Some moves.[count]
+                    bestScore <- score
 
                     if nextPerspective = perspective then
                         alpha <- max alpha score
@@ -129,16 +132,12 @@ namespace QUT
                         beta <- min beta score
 
                     if alpha >= beta then
-                        bestMove <- Some moves.[count]
-                        bestScore <- score
                         best <- true
                     else
                         count <- count + 1
                         if count < moves.Length - 1 then
                             best <- false
                         else
-                            bestMove <- Some moves.[count - 1]
-                            bestScore <- score
                             best <- true
 
                 (bestMove, bestScore)
@@ -153,10 +152,6 @@ namespace QUT
             let pieces = Array.init size (fun _ -> Array.init size (fun _ -> ""))
             { turn = first; size = size; pieces = pieces }
         // plus other helper functions ...
-
-
-
-
 
         type WithAlphaBetaPruning() =
             override this.ToString()         = "Impure F# with Alpha Beta Pruning";

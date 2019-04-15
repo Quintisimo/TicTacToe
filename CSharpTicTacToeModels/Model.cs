@@ -15,7 +15,14 @@ namespace QUT.CSharpTicTacToe
         public Game ApplyMove(Game game, Move move)
         {
             game.pieces[move.Row, move.Col] = game.Turn == Player.CROSS ? "X" : "O";
+            game.Turn = game.Turn == Player.CROSS ? Player.NOUGHT : Player.CROSS;
             return game;
+        }
+
+        private void UndoMove(Game game, Move move)
+        {
+            game.pieces[move.Row, move.Col] = "";
+            game.Turn = game.Turn == Player.CROSS ? Player.NOUGHT : Player.CROSS;
         }
 
         public Move CreateMove(int row, int col)
@@ -58,13 +65,13 @@ namespace QUT.CSharpTicTacToe
         private List<Move> MoveGenerator(Game game) 
         {
             List<Move> possibleMoves = new List<Move>();
-            for (int i = 0; i < game.Size - 1; i++)
+            for (int i = 0; i < game.Size; i++)
             {
-                for (int j = 0; i < game.Size - 1; j++)
+                for (int j = 0; j < game.Size; j++)
                 {
                     if (game.getPiece(i, j) == "")
                     {
-                        Move move = new Move(i, j);
+                        Move move = CreateMove(i, j);
                         possibleMoves.Add(move);
                     }
                 }
@@ -74,6 +81,7 @@ namespace QUT.CSharpTicTacToe
 
         public Tuple<Move, int> IterativeMiniMax(Game game, Player perspective, int a, int b)
         {
+            NodeCounter.Increment();
             bool over = GameOver(game);
             Move bestMove = null;
             int bestScore = 0;
@@ -85,25 +93,28 @@ namespace QUT.CSharpTicTacToe
                 bestScore = HeuristicScore(game, perspective);
                 return new Tuple<Move, int>(bestMove, bestScore);
             }
-            else
+            List<Move> moves = MoveGenerator(game);
+            foreach (Move move in moves)
             {
-                List<Move> moves = MoveGenerator(game);
-                foreach (Move move in moves) {
-                    Game newState = ApplyMove(game, move);
-                    Player nextPerspective = newState.Turn;
-                    Tuple<Move, int> tuple = IterativeMiniMax(newState, nextPerspective, alpha, beta);
+                Game newState = ApplyMove(game, move);
+                Player nextPerspective = newState.Turn;
+                Tuple<Move, int> tuple = IterativeMiniMax(newState, nextPerspective, alpha, beta);
+                UndoMove(game, move);
+                bestMove = move;
+                bestScore = tuple.Item2;
 
-                    if (nextPerspective == perspective)
-                    {
-                        alpha = Math.Max(alpha, tuple.Item2);
-                    } else {
-                        beta = Math.Max(beta, tuple.Item2);
-                    }
+                if (nextPerspective == perspective)
+                {
+                    alpha = Math.Max(alpha, tuple.Item2);
+                }
+                else
+                {
+                    beta = Math.Min(beta, tuple.Item2);
+                }
 
-                    if (alpha >= beta)
-                    {
-                        break;
-                    }
+                if (alpha >= beta)
+                {
+                    break;
                 }
             }
             return new Tuple<Move, int>(bestMove, bestScore);
@@ -111,6 +122,7 @@ namespace QUT.CSharpTicTacToe
 
         public Move FindBestMove(Game game) 
         {
+            NodeCounter.Reset();
             Tuple<Move, int> tuple = IterativeMiniMax(game, game.Turn, int.MinValue, int.MaxValue);
             return tuple.Item1;
 
@@ -118,14 +130,14 @@ namespace QUT.CSharpTicTacToe
 
         private List<List<Tuple<int, int>>> Lines(int size)
         {
-            List<Tuple<int, int>> horizontal = new List<Tuple<int, int>>();
-            List<Tuple<int, int>> vertical = new List<Tuple<int, int>>();
             List<Tuple<int, int>> leftDiagonal = new List<Tuple<int, int>>();
             List<Tuple<int, int>> rightDiagonal = new List<Tuple<int, int>>();
             List<List<Tuple<int, int>>> lines = new List<List<Tuple<int, int>>>();
 
             for (int i = 0; i < size; i++)
             {
+                List<Tuple<int, int>> horizontal = new List<Tuple<int, int>>();
+                List<Tuple<int, int>> vertical = new List<Tuple<int, int>>();
                 for (int j = 0; j < size; j++)
                 {
                     horizontal.Add(new Tuple<int, int>(i, j));
@@ -141,11 +153,10 @@ namespace QUT.CSharpTicTacToe
                         rightDiagonal.Add(new Tuple<int, int>(i, j));
                     }
                 }
-
+                lines.Add(horizontal);
+                lines.Add(vertical);
             }
 
-            lines.Add(horizontal);
-            lines.Add(vertical);
             lines.Add(leftDiagonal);
             lines.Add(rightDiagonal);
             return lines;
@@ -199,9 +210,9 @@ namespace QUT.CSharpTicTacToe
         {
             string[,] pieces = new string[size, size];
 
-            for (int i = 0; i < size - 1; i++)
+            for (int i = 0; i < size; i++)
             {
-                for (int j = 0; j < size - 1; j++)
+                for (int j = 0; j < size; j++)
                 {
                     pieces[i,j] = "";
                 }

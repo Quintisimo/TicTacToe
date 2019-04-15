@@ -6,15 +6,13 @@ namespace QUT.CSharpTicTacToe
     public class Game : ITicTacToeGame<Player>
     {
         public string[,] pieces;
-        private int size;
-        private Player turn;
-        public int Size => size;
-        public Player Turn => turn;
+        public int Size { get; }
+        public Player Turn { set; get; }
 
         public Game(Player first, int size, string[,] pieces)
         {
-            this.turn = first;
-            this.size = size;
+            Turn = first;
+            Size = size;
             this.pieces = pieces;
         }
 
