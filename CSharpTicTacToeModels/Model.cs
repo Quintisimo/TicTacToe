@@ -11,11 +11,13 @@ namespace QUT.CSharpTicTacToe
         {
             return "Impure C# with Alpha Beta Pruning";
         }
+
         public Game ApplyMove(Game game, Move move)
         {
             game.pieces[move.Row, move.Col] = game.Turn == Player.CROSS ? "X" : "O";
             return game;
         }
+
         public Move CreateMove(int row, int col)
         {
             return new Move(row, col);
@@ -29,30 +31,89 @@ namespace QUT.CSharpTicTacToe
             {
                 return false;
             }
-            else
-            {
-                return true;
-            }
+            return true;
         }
 
-        private int HeuristicScore(Game game, Move move)
+        private int HeuristicScore(Game game, Player player) 
         {
             TicTacToeOutcome<Player> outcome = GameOutcome(game);
-            return outcome.Tag;
+
+            if (outcome.IsDraw) 
+            {
+                return 0;
+            }
+
+            if (outcome.IsWin)
+            {
+                var win = outcome as TicTacToeOutcome<Player>.Win;
+                if (win.winner == player) {
+                    return 1;
+                }
+                return -1;
+
+            }
+            return -2;
         }
 
-        //public Tuple<Move?, int> IterativeMiniMax(Game game, Player perspective)
-        //{
-        //    bool over = GameOver(game);
-
-        //    if (over)
-        //    {
-        //        int score =
-        //    }
-        //}
-        public Move FindBestMove(Game game)
+        private List<Move> MoveGenerator(Game game) 
         {
-            throw new System.NotImplementedException("FindBestMove");
+            List<Move> possibleMoves = new List<Move>();
+            for (int i = 0; i < game.Size - 1; i++)
+            {
+                for (int j = 0; i < game.Size - 1; j++)
+                {
+                    if (game.getPiece(i, j) == "")
+                    {
+                        Move move = new Move(i, j);
+                        possibleMoves.Add(move);
+                    }
+                }
+            }
+            return possibleMoves;
+        }
+
+        public Tuple<Move, int> IterativeMiniMax(Game game, Player perspective, int a, int b)
+        {
+            bool over = GameOver(game);
+            Move bestMove = null;
+            int bestScore = 0;
+            int alpha = a;
+            int beta = b;
+
+            if (over)
+            {
+                bestScore = HeuristicScore(game, perspective);
+                return new Tuple<Move, int>(bestMove, bestScore);
+            }
+            else
+            {
+                List<Move> moves = MoveGenerator(game);
+                foreach (Move move in moves) {
+                    Game newState = ApplyMove(game, move);
+                    Player nextPerspective = newState.Turn;
+                    Tuple<Move, int> tuple = IterativeMiniMax(newState, nextPerspective, alpha, beta);
+
+                    if (nextPerspective == perspective)
+                    {
+                        alpha = Math.Max(alpha, tuple.Item2);
+                    } else {
+                        beta = Math.Max(beta, tuple.Item2);
+                    }
+
+                    if (alpha >= beta)
+                    {
+                        break;
+                    }
+                }
+            }
+            return new Tuple<Move, int>(bestMove, bestScore);
+        }
+
+        public Move FindBestMove(Game game) 
+        {
+            Tuple<Move, int> tuple = IterativeMiniMax(game, game.Turn, int.MinValue, int.MaxValue);
+            return tuple.Item1;
+
         }
 
         private List<List<Tuple<int, int>>> Lines(int size)
@@ -103,14 +164,13 @@ namespace QUT.CSharpTicTacToe
             {
                 return TicTacToeOutcome<Player>.Undecided;
             }
-            else if (pieces.Contains("X") && pieces.Contains("O"))
+
+            if (pieces.Contains("X") && pieces.Contains("O"))
             {
                 return TicTacToeOutcome<Player>.Draw;
             }
-            else
-            {
-                return TicTacToeOutcome<Player>.NewWin(game.Turn, line);
-            }
+
+            return TicTacToeOutcome<Player>.NewWin(game.Turn, line);
         }
 
         public TicTacToeOutcome<Player> GameOutcome(Game game)
@@ -127,14 +187,14 @@ namespace QUT.CSharpTicTacToe
             {
                 return outcomes.Find(o => o.IsWin);
             }
-            else if (outcomes.FindAll(o => o.IsUndecided).Count == outcomes.Count)
+
+            if (outcomes.FindAll(o => o.IsUndecided).Count == outcomes.Count)
             {
                 return TicTacToeOutcome<Player>.Draw;
-            } else
-            {
-                return TicTacToeOutcome<Player>.Undecided;
             }
+            return TicTacToeOutcome<Player>.Undecided;
         }
+
         public Game GameStart(Player first, int size)
         {
             string[,] pieces = new string[size, size];
