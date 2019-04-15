@@ -122,7 +122,6 @@ namespace QUT
                     let newGameState  = ApplyMove game moves.[count]
                     let nextPerspective = newGameState.turn
                     let (_, score) = IterativeMiniMax newGameState nextPerspective alpha beta
-                    UndoMove game moves.[count]
                     bestMove <- Some moves.[count]
                     bestScore <- score
 
@@ -139,6 +138,7 @@ namespace QUT
                             best <- false
                         else
                             best <- true
+                    UndoMove game moves.[count - 1]
 
                 (bestMove, bestScore)
                         

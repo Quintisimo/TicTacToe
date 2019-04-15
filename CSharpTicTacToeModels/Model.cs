@@ -94,28 +94,39 @@ namespace QUT.CSharpTicTacToe
                 return new Tuple<Move, int>(bestMove, bestScore);
             }
             List<Move> moves = MoveGenerator(game);
+
             foreach (Move move in moves)
             {
                 Game newState = ApplyMove(game, move);
                 Player nextPerspective = newState.Turn;
                 Tuple<Move, int> tuple = IterativeMiniMax(newState, nextPerspective, alpha, beta);
-                UndoMove(game, move);
-                bestMove = move;
-                bestScore = tuple.Item2;
 
                 if (nextPerspective == perspective)
                 {
                     alpha = Math.Max(alpha, tuple.Item2);
+
+                    if (alpha == tuple.Item2)
+                    {
+                        bestMove = move;
+                        bestScore = tuple.Item2;
+                    }
                 }
                 else
                 {
                     beta = Math.Min(beta, tuple.Item2);
+
+                    if (beta == tuple.Item2)
+                    {
+                        bestMove = move;
+                        bestScore = tuple.Item2;
+                    }
                 }
 
                 if (alpha >= beta)
                 {
                     break;
                 }
+                UndoMove(game, move);
             }
             return new Tuple<Move, int>(bestMove, bestScore);
         }
@@ -188,7 +199,7 @@ namespace QUT.CSharpTicTacToe
         {
             List<List<Tuple<int, int>>> lines = Lines(game.Size);
             List<TicTacToeOutcome<Player>> outcomes = new List<TicTacToeOutcome<Player>>();
-
+            
             foreach (List<Tuple<int, int>> line in lines)
             {
                 outcomes.Add(CheckLine(game, line));
@@ -199,11 +210,11 @@ namespace QUT.CSharpTicTacToe
                 return outcomes.Find(o => o.IsWin);
             }
 
-            if (outcomes.FindAll(o => o.IsUndecided).Count == outcomes.Count)
+            if (outcomes.Contains(TicTacToeOutcome<Player>.Undecided))
             {
-                return TicTacToeOutcome<Player>.Draw;
+                return TicTacToeOutcome<Player>.Undecided;
             }
-            return TicTacToeOutcome<Player>.Undecided;
+            return TicTacToeOutcome<Player>.Draw;
         }
 
         public Game GameStart(Player first, int size)
