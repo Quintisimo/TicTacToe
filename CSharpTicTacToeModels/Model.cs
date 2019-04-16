@@ -103,20 +103,18 @@ namespace QUT.CSharpTicTacToe
 
                 if (nextPerspective == perspective)
                 {
-                    alpha = Math.Max(alpha, tuple.Item2);
-
-                    if (alpha == tuple.Item2)
+                    if (tuple.Item2 > alpha)
                     {
+                        alpha = tuple.Item2;
                         bestMove = move;
                         bestScore = tuple.Item2;
                     }
                 }
                 else
                 {
-                    beta = Math.Min(beta, tuple.Item2);
-
-                    if (beta == tuple.Item2)
+                    if (tuple.Item2 < beta)
                     {
+                        beta = tuple.Item2;
                         bestMove = move;
                         bestScore = tuple.Item2;
                     }

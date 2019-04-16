@@ -122,13 +122,17 @@ namespace QUT
                     let newGameState  = ApplyMove game moves.[count]
                     let nextPerspective = newGameState.turn
                     let (_, score) = IterativeMiniMax newGameState nextPerspective alpha beta
-                    bestMove <- Some moves.[count]
-                    bestScore <- score
 
                     if nextPerspective = perspective then
-                        alpha <- max alpha score
+                        if score > alpha then
+                            alpha <- score
+                            bestMove <- Some moves.[count]
+                            bestScore <- score
                     else
-                        beta <- min beta score
+                        if score < beta then
+                            beta <- score
+                            bestMove <- Some moves.[count]
+                            bestScore <- score
 
                     if alpha >= beta then
                         best <- true
