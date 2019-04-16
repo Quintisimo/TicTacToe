@@ -31,8 +31,8 @@ namespace QUT
 
         let rec AlphaBetaPruning  (tuples: ('Game * 'Move)list) (counter: int) (alpha: int) (beta: int) (getTurn: 'Game -> 'Player) (perspective: 'Player) (miniMax: int -> int -> 'Game -> 'Player -> Option<'Move> * int) =
             let (gameState, move) = tuples.[counter]
+            let (_, score) = miniMax alpha beta gameState perspective
             let nextPerspective = getTurn gameState
-            let (_, score) = miniMax alpha beta gameState nextPerspective
             let newAlpha = match (nextPerspective = perspective) with 
                             | true -> max alpha score
                             | false -> alpha
@@ -42,7 +42,10 @@ namespace QUT
                             | false -> beta
 
             if newAlpha >= newBeta then
-                (Some move, score)
+                if nextPerspective = perspective then
+                    (Some move, newAlpha)
+                else
+                    (Some move, newBeta)
             else
                 let newCounter = counter + 1
 

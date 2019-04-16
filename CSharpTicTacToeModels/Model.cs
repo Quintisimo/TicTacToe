@@ -84,22 +84,22 @@ namespace QUT.CSharpTicTacToe
             NodeCounter.Increment();
             bool over = GameOver(game);
             Move bestMove = null;
-            int bestScore = 0;
             int alpha = a;
             int beta = b;
 
             if (over)
             {
-                bestScore = HeuristicScore(game, perspective);
-                return new Tuple<Move, int>(bestMove, bestScore);
+                int score = HeuristicScore(game, perspective);
+                return new Tuple<Move, int>(bestMove, score);
             }
             List<Move> moves = MoveGenerator(game);
 
             foreach (Move move in moves)
             {
                 Game newState = ApplyMove(game, move);
+                Tuple<Move, int> tuple = IterativeMiniMax(newState, perspective, alpha, beta);
                 Player nextPerspective = newState.Turn;
-                Tuple<Move, int> tuple = IterativeMiniMax(newState, nextPerspective, alpha, beta);
+                bestMove = move;
 
                 if (nextPerspective == perspective)
                 {
@@ -107,7 +107,6 @@ namespace QUT.CSharpTicTacToe
                     {
                         alpha = tuple.Item2;
                         bestMove = move;
-                        bestScore = tuple.Item2;
                     }
                 }
                 else
@@ -116,17 +115,24 @@ namespace QUT.CSharpTicTacToe
                     {
                         beta = tuple.Item2;
                         bestMove = move;
-                        bestScore = tuple.Item2;
                     }
                 }
+                UndoMove(game, move);
 
                 if (alpha >= beta)
                 {
                     break;
                 }
-                UndoMove(game, move);
             }
-            return new Tuple<Move, int>(bestMove, bestScore);
+
+            if (game.Turn == perspective)
+            {
+                return new Tuple<Move, int>(bestMove, alpha);
+            }
+            else
+            {
+                return new Tuple<Move, int>(bestMove, beta);
+            }
         }
 
         public Move FindBestMove(Game game) 

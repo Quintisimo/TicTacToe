@@ -106,13 +106,12 @@ namespace QUT
             NodeCounter.Increment()
             let over = GameOver game
             let mutable bestMove: Option<Move> = None
-            let mutable bestScore = 0
             let mutable alpha = a
             let mutable beta = b
 
             if over then
-                bestScore <- HeuristicScore game perspective
-                (bestMove, bestScore)
+                let score = HeuristicScore game perspective
+                (bestMove, score)
             else
                 let moves = MoveGenerator game
                 let mutable best = false
@@ -120,31 +119,35 @@ namespace QUT
 
                 while best <> true do
                     let newGameState  = ApplyMove game moves.[count]
+                    let (_, score) = IterativeMiniMax newGameState perspective alpha beta
                     let nextPerspective = newGameState.turn
-                    let (_, score) = IterativeMiniMax newGameState nextPerspective alpha beta
+                    bestMove <- Some moves.[count]
 
                     if nextPerspective = perspective then
                         if score > alpha then
-                            alpha <- score
                             bestMove <- Some moves.[count]
-                            bestScore <- score
+                            alpha <- score
                     else
                         if score < beta then
-                            beta <- score
                             bestMove <- Some moves.[count]
-                            bestScore <- score
+                            beta <- score
+
+                    UndoMove game moves.[count]
 
                     if alpha >= beta then
                         best <- true
                     else
                         count <- count + 1
-                        if count < moves.Length - 1 then
+                        if count < moves.Length then
                             best <- false
                         else
+                            bestMove <- Some moves.[count - 1]
                             best <- true
-                    UndoMove game moves.[count - 1]
-
-                (bestMove, bestScore)
+                
+                if game.turn = perspective then
+                    (bestMove, alpha)
+                else
+                    (bestMove, beta)
                         
 
         let FindBestMove (game: GameState) : Move =
