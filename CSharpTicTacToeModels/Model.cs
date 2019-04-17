@@ -79,67 +79,79 @@ namespace QUT.CSharpTicTacToe
             return possibleMoves;
         }
 
-        public Tuple<Move, int> IterativeMiniMax(Game game, Player perspective, int a, int b)
+        public Tuple<Move, int> IterativeMiniMax(Game game, Player perspective)
         {
             NodeCounter.Increment();
             bool over = GameOver(game);
-            Move bestMove = null;
-            int alpha = a;
-            int beta = b;
+            int alpha = int.MinValue;
+            int beta = int.MaxValue;
 
             if (over)
             {
                 int score = HeuristicScore(game, perspective);
-                return new Tuple<Move, int>(bestMove, score);
+                return new Tuple<Move, int>(null, score);
             }
+
             List<Move> moves = MoveGenerator(game);
+            Player nextPerspective = game.Turn;
 
-            foreach (Move move in moves)
+            if (nextPerspective == perspective)
             {
-                Game newState = ApplyMove(game, move);
-                Tuple<Move, int> tuple = IterativeMiniMax(newState, perspective, alpha, beta);
-                Player nextPerspective = newState.Turn;
-                bestMove = move;
+                int bestScore = int.MinValue;
+                Move bestMove = null;
 
-                if (nextPerspective == perspective)
+                foreach(Move move in moves)
                 {
-                    if (tuple.Item2 > alpha)
+                    Game newState = ApplyMove(game, move);
+                    var (_, score) = IterativeMiniMax(newState, perspective);
+                    bestScore = Math.Max(bestScore, score);
+                    alpha = Math.Max(alpha, bestScore);
+
+                    if (alpha == score)
                     {
-                        alpha = tuple.Item2;
                         bestMove = move;
                     }
-                }
-                else
-                {
-                    if (tuple.Item2 < beta)
+
+                    if (alpha >= beta)
                     {
-                        beta = tuple.Item2;
-                        bestMove = move;
+                        break;
                     }
+                    UndoMove(game, move);
                 }
-                UndoMove(game, move);
-
-                if (alpha >= beta)
-                {
-                    break;
-                }
-            }
-
-            if (game.Turn == perspective)
-            {
-                return new Tuple<Move, int>(bestMove, alpha);
+                return new Tuple<Move, int>(bestMove, bestScore);
             }
             else
             {
-                return new Tuple<Move, int>(bestMove, beta);
+                int bestScore = int.MaxValue;
+                Move bestMove = null;
+
+                foreach(Move move in moves)
+                {
+                    Game newState = ApplyMove(game, move);
+                    var (_, score) = IterativeMiniMax(newState, perspective);
+                    bestScore = Math.Min(bestScore, score);
+                    beta = Math.Min(beta, bestScore);
+
+                    if (beta == score)
+                    {
+                        bestMove = move;
+                    }
+
+                    if (alpha >= beta)
+                    {
+                        break;
+                    }
+                    UndoMove(game, move);
+                }
+                return new Tuple<Move, int>(bestMove, bestScore);
             }
         }
 
         public Move FindBestMove(Game game) 
         {
             NodeCounter.Reset();
-            Tuple<Move, int> tuple = IterativeMiniMax(game, game.Turn, int.MinValue, int.MaxValue);
-            return tuple.Item1;
+            var (move, _) = IterativeMiniMax(game, game.Turn);
+            return move;
 
         }
 
@@ -196,7 +208,11 @@ namespace QUT.CSharpTicTacToe
                 return TicTacToeOutcome<Player>.Draw;
             }
 
-            return TicTacToeOutcome<Player>.NewWin(game.Turn, line);
+            if (pieces.Contains("X"))
+            {
+                return TicTacToeOutcome<Player>.NewWin(Player.CROSS, line);
+            }
+            return TicTacToeOutcome<Player>.NewWin(Player.NOUGHT, line);
         }
 
         public TicTacToeOutcome<Player> GameOutcome(Game game)
@@ -206,12 +222,17 @@ namespace QUT.CSharpTicTacToe
             
             foreach (List<Tuple<int, int>> line in lines)
             {
-                outcomes.Add(CheckLine(game, line));
-            }
+                TicTacToeOutcome<Player> outcome = CheckLine(game, line);
 
-            if (!outcomes.Contains(TicTacToeOutcome<Player>.Undecided) && !outcomes.Contains(TicTacToeOutcome<Player>.Draw))
-            {
-                return outcomes.Find(o => o.IsWin);
+                if (outcome.IsWin)
+                {
+                    return outcome;
+                }
+                else
+                {
+                    outcomes.Add(outcome);
+                }
+
             }
 
             if (outcomes.Contains(TicTacToeOutcome<Player>.Undecided))
