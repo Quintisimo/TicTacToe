@@ -121,22 +121,10 @@ namespace QUT
             let (move, _) = minMax game game.turn
             move.Value
 
-            //if Option.isSome move then
-            //else
-                //None
-
         let MiniMaxWithPruning (game: GameState) : Move = 
             let minMaxPruning = GameTheory.MiniMaxWithAlphaBetaPruningGenerator HeuristicScore GetTurn GameOver MoveGenerator ApplyMove
-            let (move, _) = minMaxPruning System.Int32.MinValue System.Int32.MaxValue game game.turn
+            let (move, _) = minMaxPruning -1 1 game game.turn
             move.Value
-
-            //if Option.isSome move then
-            //else
-                //None
-        // plus other helper functions ...
-
-
-
 
         [<AbstractClass>]
         type Model() =

@@ -105,8 +105,8 @@ namespace QUT
         let rec IterativeMiniMax (game: GameState) (perspective: Player) =
             NodeCounter.Increment()
             let over = GameOver game
-            let mutable alpha = System.Int32.MinValue
-            let mutable beta = System.Int32.MaxValue
+            let mutable alpha = -1
+            let mutable beta = 1
 
             if over then
                 let score = HeuristicScore game perspective
