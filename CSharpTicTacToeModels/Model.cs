@@ -83,8 +83,8 @@ namespace QUT.CSharpTicTacToe
         {
             NodeCounter.Increment();
             bool over = GameOver(game);
-            int alpha = -1;
-            int beta = 1;
+            int alpha = int.MinValue;
+            int beta = int.MaxValue;
 
             if (over)
             {
