@@ -157,7 +157,6 @@ namespace QUT
                             counter <- counter + 1
                         UndoMove game move
                     (bestMove, bestScore)
-                        
 
         let FindBestMove (game: GameState) : Move =
             NodeCounter.Reset()
