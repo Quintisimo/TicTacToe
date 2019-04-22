@@ -79,12 +79,10 @@ namespace QUT.CSharpTicTacToe
             return possibleMoves;
         }
 
-        public Tuple<Move, int> IterativeMiniMax(Game game, Player perspective)
+        public Tuple<Move, int> IterativeMiniMax(int alpha, int beta, Game game, Player perspective)
         {
             NodeCounter.Increment();
             bool over = GameOver(game);
-            int alpha = int.MinValue;
-            int beta = int.MaxValue;
 
             if (over)
             {
@@ -102,23 +100,20 @@ namespace QUT.CSharpTicTacToe
 
                 foreach(Move move in moves)
                 {
-                    Game newState = ApplyMove(game, move);
-                    var (_, score) = IterativeMiniMax(newState, perspective);
-                    bestScore = Math.Max(bestScore, score);
-                    alpha = Math.Max(alpha, bestScore);
+                    Game nextGame = ApplyMove(game, move);
+                    var (_, score) = IterativeMiniMax(alpha, beta, nextGame, perspective);
+                    int newBestScore = Math.Max(bestScore, score);
+                    alpha = Math.Max(alpha, newBestScore);
 
-                    if (alpha == score)
+                    if (alpha == score && newBestScore != bestScore)
                     {
+                        bestScore = newBestScore;
                         bestMove = move;
                     }
-
-                    if (alpha >= beta)
-                    {
-                        break;
-                    }
                     UndoMove(game, move);
+                    if (alpha >= beta) break;
                 }
-                return new Tuple<Move, int>(bestMove, bestScore);
+                return new Tuple<Move, int>(bestMove, alpha);
             }
             else
             {
@@ -127,32 +122,28 @@ namespace QUT.CSharpTicTacToe
 
                 foreach(Move move in moves)
                 {
-                    Game newState = ApplyMove(game, move);
-                    var (_, score) = IterativeMiniMax(newState, perspective);
-                    bestScore = Math.Min(bestScore, score);
-                    beta = Math.Min(beta, bestScore);
+                    Game nextGame = ApplyMove(game, move);
+                    var (_, score) = IterativeMiniMax(alpha, beta, nextGame, perspective);
+                    int newBestScore = Math.Min(bestScore, score);
+                    beta = Math.Min(beta, newBestScore);
 
-                    if (beta == score)
+                    if (beta == score && newBestScore != bestScore)
                     {
+                        bestScore = newBestScore;
                         bestMove = move;
                     }
-
-                    if (alpha >= beta)
-                    {
-                        break;
-                    }
                     UndoMove(game, move);
+                    if (alpha >= beta) break;
                 }
-                return new Tuple<Move, int>(bestMove, bestScore);
+                return new Tuple<Move, int>(bestMove, beta);
             }
         }
 
         public Move FindBestMove(Game game) 
         {
             NodeCounter.Reset();
-            var (move, _) = IterativeMiniMax(game, game.Turn);
+            var (move, _) = IterativeMiniMax(-1, 1, game, game.Turn);
             return move;
-
         }
 
         private List<List<Tuple<int, int>>> Lines(int size)
