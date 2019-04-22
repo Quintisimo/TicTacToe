@@ -122,7 +122,12 @@ namespace QUT
                     while counter < moves.Length do
                         let move = moves.[counter]
                         let game = ApplyMove game move
-                        let (_, score) = if Option.isSome newAlpha then IterativeMiniMax newAlpha.Value beta game perspective else IterativeMiniMax alpha beta game perspective
+                        let (_, score) = 
+                            if Option.isSome newAlpha then 
+                                IterativeMiniMax newAlpha.Value beta game perspective 
+                            else 
+                                IterativeMiniMax alpha beta game perspective
+
                         let newBestScore = max bestScore score
                         newAlpha <- Some (max alpha newBestScore)
 
@@ -145,7 +150,12 @@ namespace QUT
                     while counter < moves.Length do
                         let move = moves.[counter]
                         let game = ApplyMove game move
-                        let (_, score) = if Option.isSome newBeta then IterativeMiniMax alpha newBeta.Value game perspective else IterativeMiniMax alpha beta game perspective
+                        let (_, score) = 
+                            if Option.isSome newBeta then 
+                                IterativeMiniMax alpha newBeta.Value game perspective 
+                            else 
+                                IterativeMiniMax alpha beta game perspective
+
                         let newBestScore = min bestScore score
                         newBeta <- Some (min beta newBestScore)
 

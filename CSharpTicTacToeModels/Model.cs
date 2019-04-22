@@ -113,7 +113,7 @@ namespace QUT.CSharpTicTacToe
                     UndoMove(game, move);
                     if (alpha >= beta) break;
                 }
-                return new Tuple<Move, int>(bestMove, alpha);
+                return new Tuple<Move, int>(bestMove, bestScore);
             }
             else
             {
@@ -135,7 +135,7 @@ namespace QUT.CSharpTicTacToe
                     UndoMove(game, move);
                     if (alpha >= beta) break;
                 }
-                return new Tuple<Move, int>(bestMove, beta);
+                return new Tuple<Move, int>(bestMove, bestScore);
             }
         }
 
@@ -189,14 +189,14 @@ namespace QUT.CSharpTicTacToe
                 pieces.Add(game.getPiece(i.Item1, i.Item2));
             }
 
-            if (pieces.Contains(""))
-            {
-                return TicTacToeOutcome<Player>.Undecided;
-            }
-
             if (pieces.Contains("X") && pieces.Contains("O"))
             {
                 return TicTacToeOutcome<Player>.Draw;
+            }
+
+            if (pieces.Contains(""))
+            {
+                return TicTacToeOutcome<Player>.Undecided;
             }
 
             if (pieces.Contains("X"))
